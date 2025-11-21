@@ -98,12 +98,14 @@ def predict(text, wordlist):
 
 @regex.command()
 @click.option("--wordlist", "-w", default=None, help="Path to profanity word list file")
-def evaluate(wordlist):
+@click.option("--samples", "-n", default=10, help="Number of false positive/negative samples to show")
+def evaluate(wordlist, samples):
     """Evaluate the regex filter on GameTox test data.
 
     Usage: 
         uv run main.py regex evaluate
         uv run main.py regex evaluate --wordlist data/en_profanity.txt
+        uv run main.py regex evaluate --wordlist data/en_profanity.txt --samples 50
     """
     try:
         click.echo("Loading GameTox dataset...")
@@ -140,10 +142,11 @@ def evaluate(wordlist):
         
         # Sample and display false positives
         click.echo("\n" + "="*60)
-        click.echo("FALSE POSITIVES (flagged as profane, but actually clean)")
+        click.echo(f"FALSE POSITIVES (flagged as profane, but actually clean)")
+        click.echo(f"Showing {min(samples, len(false_positives))} of {len(false_positives)} total")
         click.echo("="*60)
         if len(false_positives) > 0:
-            sample_fp = false_positives.sample(n=min(10, len(false_positives)), random_state=42)
+            sample_fp = false_positives.sample(n=min(samples, len(false_positives)), random_state=42)
             for i, (_, row) in enumerate(sample_fp.iterrows(), 1):
                 click.echo(f"{i:2d}. {row['message']}")
         else:
@@ -151,10 +154,11 @@ def evaluate(wordlist):
         
         # Sample and display false negatives
         click.echo("\n" + "="*60)
-        click.echo("FALSE NEGATIVES (missed toxic messages)")
+        click.echo(f"FALSE NEGATIVES (missed toxic messages)")
+        click.echo(f"Showing {min(samples, len(false_negatives))} of {len(false_negatives)} total")
         click.echo("="*60)
         if len(false_negatives) > 0:
-            sample_fn = false_negatives.sample(n=min(10, len(false_negatives)), random_state=42)
+            sample_fn = false_negatives.sample(n=min(samples, len(false_negatives)), random_state=42)
             for i, (_, row) in enumerate(sample_fn.iterrows(), 1):
                 click.echo(f"{i:2d}. {row['message']}")
         else:
