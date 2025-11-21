@@ -128,15 +128,14 @@ Choose one or more extensions based on your interests:
 - Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset
 - Benchmark against pre-trained models like [toxic-bert](https://huggingface.co/unitary/toxic-bert)
 - Fine-tune an LLM to match GPT-4 performance at lower cost/latency
-- Implement sequence labeling to identify which specific tokens to censor
-- Compare token-level approaches (BERT) vs. generative approaches (T5)
+- Explore censoring (****ing) via token-level approaches (BERT) vs. generative approaches (T5)
 - Distinguish between profanity, hate speech, and harassment (should these be handled differently in the game?)
 
-**Multilingual Support:**
+**Expanded Support:**
 - Extend to non-English languages using multilingual BERT or LLMs
 - **Important**: Validate data quality carefully for languages you don't speak
+- Evaluate on additional datasets (see `docs/Perplexity_note.md` for options)
 
 **Deployment & Engineering:**
 - Package your solution as an installable Python library
 - Build a REST API for real-time filtering
-- Evaluate on additional datasets (see `docs/Perplexity_note.md` for options)
