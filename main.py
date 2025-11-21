@@ -7,6 +7,7 @@ Main entry point for training, evaluating, and using profanity filters.
 
 import click
 from data_loader import load_gametox, get_binary_labels, ToxicityLabel
+from regex_filter import regex
 
 
 @click.group()
@@ -44,65 +45,7 @@ def stats():
 # ============================================================================
 # Regex Filter Commands
 # ============================================================================
-
-@cli.group()
-def regex():
-    """Rule-based regex filter (Level 1)."""
-    pass
-
-
-@regex.command()
-@click.argument("text")
-def predict(text):
-    """Test the regex filter on a single text.
-    
-    Usage: uv run main.py regex predict "this is a test"
-    """
-    click.echo(f"Processing: {text}")
-    # TODO: Implement regex filtering logic
-    click.echo("Result: (not implemented yet)")
-
-
-@regex.command()
-def evaluate():
-    """Evaluate the regex filter on GameTox test data.
-    
-    Usage: uv run main.py regex evaluate
-    """
-    click.echo("Evaluating regex filter...")
-    # TODO: Implement evaluation logic
-    click.echo("(not implemented yet)")
-
-
-@regex.command()
-@click.argument("word")
-def count_word(word):
-    """Count messages containing a specific word.
-    
-    Usage: uv run main.py regex count-word damn
-    """
-    try:
-        df = load_gametox()
-        binary_labels = get_binary_labels(df)
-        
-        # Find messages containing the word (case-insensitive)
-        contains_word = df['message'].str.contains(word, case=False, na=False)
-        
-        total_with_word = contains_word.sum()
-        toxic_with_word = (contains_word & binary_labels).sum()
-        non_toxic_with_word = (contains_word & ~binary_labels).sum()
-        
-        click.echo(f"Messages containing '{word}': {total_with_word:,}")
-        click.echo(f"  Labeled as toxic: {toxic_with_word:,}")
-        click.echo(f"  Labeled as non-toxic: {non_toxic_with_word:,}")
-        
-        if total_with_word > 0:
-            click.echo(f"\nPercentage toxic: {100*toxic_with_word/total_with_word:.1f}%")
-            
-    except FileNotFoundError as e:
-        click.echo(f"Error: {e}", err=True)
-        raise click.Abort()
-
+cli.add_command(regex)
 
 # ============================================================================
 # Sklearn Filter Commands

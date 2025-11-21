@@ -5,7 +5,6 @@ Data loading utilities for GameTox and Reddit usernames datasets.
 from enum import IntEnum
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 
 class ToxicityLabel(IntEnum):
