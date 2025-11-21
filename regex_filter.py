@@ -47,6 +47,10 @@ class RegexProfanityFilter:
         pattern_no_boundaries = r'(?:' + '|'.join(escaped_words) + r')'
         self.pattern_no_boundaries = re.compile(pattern_no_boundaries, re.IGNORECASE)
         
+        # For capitalization-based matching, store the word list
+        # We'll split usernames at case transitions and check each part
+        self.words_lower = [word.lower() for word in words]
+        
         self.word_count = len(words)
     
     def classify(self, text: str) -> bool:
@@ -73,6 +77,40 @@ class RegexProfanityFilter:
             True if profane (contains profanity), False if clean
         """
         return bool(self.pattern_no_boundaries.search(username))
+    
+    def classify_username_caps(self, username: str) -> bool:
+        """Classify a username as profane using capitalization as word boundaries.
+        
+        Treats case transitions (lowercase to uppercase) as word boundaries,
+        which helps catch camelCase/PascalCase offensive words like
+        "ChefBoyAreWeFucked" while avoiding false positives like "glassguru".
+        
+        Algorithm:
+        1. Split username at capitalization boundaries and non-alphanumeric chars
+           (e.g., "ChefBoyAreFucked" -> ["Chef", "Boy", "Are", "Fucked"])
+        2. Check if any segment exactly matches a profane word (case-insensitive)
+        
+        Args:
+            username: The username to classify
+            
+        Returns:
+            True if profane (contains profanity at word/case boundaries), False if clean
+        """
+        # First split on non-alphanumeric characters (hyphens, underscores, etc)
+        # Then split each part at capitalization boundaries
+        # This handles both "password-is-weak" and "ChefBoyAreWeFucked"
+        parts = re.split(r'[^a-zA-Z0-9]+', username)
+        
+        all_segments = []
+        for part in parts:
+            # Split at: uppercase after lowercase, uppercase before lowercase
+            # This regex splits "ChefBoyAreWeFucked" into ["Chef", "Boy", "Are", "We", "Fucked"]
+            segments = re.findall(r'[A-Z]*[a-z]+|[A-Z]+(?=[A-Z][a-z]|\b)|[0-9]+', part)
+            all_segments.extend(segments)
+        
+        # Check if any segment exactly matches a profane word
+        segments_lower = [seg.lower() for seg in all_segments if seg]
+        return any(seg in self.words_lower for seg in segments_lower)
     
     @classmethod
     def basic_filter(cls) -> 'RegexProfanityFilter':
@@ -161,12 +199,15 @@ def evaluate(wordlist, samples):
 @click.option("--wordlist", "-w", default=None, help="Path to profanity word list file")
 @click.option("--sample-size", default=10000, help="Number of usernames to evaluate (0 for all)")
 @click.option("--review-count", "-n", default=50, help="Number of flagged usernames to review")
-def eval_usernames(wordlist, sample_size, review_count):
+@click.option("--method", type=click.Choice(['boundaries', 'substring', 'caps'], case_sensitive=False), 
+              default='caps', help="Matching method: boundaries (\\b), substring (no boundaries), caps (case transitions)")
+def eval_usernames(wordlist, sample_size, review_count, method):
     """Evaluate the regex filter on Reddit usernames.
     
     Usage:
         uv run main.py regex eval-usernames
-        uv run main.py regex eval-usernames --wordlist data/en_profanity.txt --sample-size 50000
+        uv run main.py regex eval-usernames --method substring
+        uv run main.py regex eval-usernames --wordlist data/en_profanity.txt --sample-size 50000 --method caps
         uv run main.py regex eval-usernames --sample-size 0  # Load all usernames
     
     Note: Usernames are not annotated, so we can only estimate precision by manual review.
@@ -192,11 +233,22 @@ def eval_usernames(wordlist, sample_size, review_count):
             click.echo("Using basic built-in wordlist")
         
         click.echo(f"Filter contains {filter_obj.word_count} profane words")
-        click.echo("\nNote: Using substring matching (no word boundaries)")
-        click.echo("      This catches concatenated words like 'ihatethisgame'\n")
+        
+        # Select classification method
+        if method == 'boundaries':
+            click.echo("\nNote: Using standard word boundaries (\\b)")
+            click.echo("      This requires hyphens, underscores, or other separators\n")
+            flagged = usernames.apply(filter_obj.classify)
+        elif method == 'substring':
+            click.echo("\nNote: Using substring matching (no word boundaries)")
+            click.echo("      This catches concatenated words like 'ihatethisgame'\n")
+            flagged = usernames.apply(filter_obj.classify_username)
+        else:  # caps
+            click.echo("\nNote: Using capitalization transitions as word boundaries")
+            click.echo("      This catches 'ChefBoyAreWeFucked' but not 'cannibalasfuck'\n")
+            flagged = usernames.apply(filter_obj.classify_username_caps)
         
         click.echo("Classifying usernames...")
-        flagged = usernames.apply(filter_obj.classify_username)
         
         flagged_count = flagged.sum()
         flagged_pct = 100 * flagged_count / len(usernames)
