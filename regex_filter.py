@@ -5,9 +5,9 @@ Regex-based profanity filter implementation (Level 1).
 import re
 from pathlib import Path
 import click
-from sklearn.metrics import classification_report
 
 from data_loader import load_gametox, get_binary_labels
+from evaluation import print_evaluation_report
 
 
 class RegexProfanityFilter:
@@ -124,47 +124,13 @@ def evaluate(wordlist, samples):
         click.echo("Classifying messages...")
         predictions = df['message'].apply(filter.classify)
         
-        # Print classification report
-        click.echo("\n" + "="*60)
-        click.echo("CLASSIFICATION REPORT")
-        click.echo("="*60)
-        report = classification_report(
-            binary_labels, 
+        print_evaluation_report(
+            binary_labels,
             predictions,
-            target_names=['Clean', 'Profane'],
-            digits=3
+            df['message'],
+            num_samples=samples,
+            filter_name="Regex Filter"
         )
-        click.echo(report)
-        
-        # Find false positives and false negatives
-        false_positives = df[predictions & ~binary_labels]
-        false_negatives = df[~predictions & binary_labels]
-        
-        # Sample and display false positives
-        click.echo("\n" + "="*60)
-        click.echo(f"FALSE POSITIVES (flagged as profane, but actually clean)")
-        click.echo(f"Showing {min(samples, len(false_positives))} of {len(false_positives)} total")
-        click.echo("="*60)
-        if len(false_positives) > 0:
-            sample_fp = false_positives.sample(n=min(samples, len(false_positives)), random_state=42)
-            for i, (_, row) in enumerate(sample_fp.iterrows(), 1):
-                click.echo(f"{i:2d}. {row['message']}")
-        else:
-            click.echo("None found!")
-        
-        # Sample and display false negatives
-        click.echo("\n" + "="*60)
-        click.echo(f"FALSE NEGATIVES (missed toxic messages)")
-        click.echo(f"Showing {min(samples, len(false_negatives))} of {len(false_negatives)} total")
-        click.echo("="*60)
-        if len(false_negatives) > 0:
-            sample_fn = false_negatives.sample(n=min(samples, len(false_negatives)), random_state=42)
-            for i, (_, row) in enumerate(sample_fn.iterrows(), 1):
-                click.echo(f"{i:2d}. {row['message']}")
-        else:
-            click.echo("None found!")
-        
-        click.echo()
         
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)

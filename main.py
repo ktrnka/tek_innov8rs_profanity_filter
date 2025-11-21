@@ -8,6 +8,7 @@ Main entry point for training, evaluating, and using profanity filters.
 import click
 from data_loader import load_gametox, get_binary_labels, ToxicityLabel
 from regex_filter import regex
+from sklearn_filter import sklearn
 
 
 @click.group()
@@ -50,53 +51,8 @@ cli.add_command(regex)
 # ============================================================================
 # Sklearn Filter Commands
 # ============================================================================
-
-@cli.group()
-def sklearn():
-    """Traditional ML classifier using scikit-learn (Level 3)."""
-    pass
-
-
-@sklearn.command()
-@click.option("--output", default="models/sklearn_filter.pkl", help="Output path for trained model")
-@click.option("--test-size", default=0.2, help="Fraction of data to use for testing")
-def train(output, test_size):
-    """Train a scikit-learn text classifier.
-    
-    Usage: uv run main.py sklearn train --output models/my_model.pkl
-    """
-    click.echo(f"Training sklearn model...")
-    click.echo(f"Test size: {test_size}")
-    click.echo(f"Will save to: {output}")
-    # TODO: Implement training logic
-
-
-@sklearn.command()
-@click.argument("text")
-@click.option("--model", default="models/sklearn_filter.pkl", help="Path to trained model")
-def predict(text, model):
-    """Test the sklearn filter on a single text.
-    
-    Usage: uv run main.py sklearn predict "this is a test"
-    """
-    click.echo(f"Processing: {text}")
-    click.echo(f"Using model: {model}")
-    # TODO: Implement prediction logic
-    click.echo("Result: (not implemented yet)")
-
-
-@sklearn.command()
-@click.option("--model", default="models/sklearn_filter.pkl", help="Path to trained model")
-def evaluate(model):
-    """Evaluate the sklearn filter on test data.
-    
-    Usage: uv run main.py sklearn evaluate
-    """
-    click.echo(f"Evaluating sklearn model: {model}")
-    # TODO: Implement evaluation logic
-    click.echo("(not implemented yet)")
+cli.add_command(sklearn)
 
 
 if __name__ == "__main__":
     cli()
-
