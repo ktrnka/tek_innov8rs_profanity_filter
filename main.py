@@ -16,44 +16,6 @@ def cli():
 
 
 @cli.command()
-@click.argument("text")
-def example(text):
-    """Test the filter on a single text example.
-    
-    Usage: uv run main.py example "this is a test"
-    """
-    click.echo(f"Processing: {text}")
-    # TODO: Implement filtering logic
-    click.echo("Result: (not implemented yet)")
-
-
-@cli.command()
-@click.option("--model-type", default="regex", help="Type of model to train (regex, sklearn, llm)")
-@click.option("--output", default="models/filter.pkl", help="Output path for trained model")
-def train(model_type, output):
-    """Train a profanity filter model.
-    
-    Usage: uv run main.py train --model-type sklearn
-    """
-    click.echo(f"Training {model_type} model...")
-    click.echo(f"Will save to: {output}")
-    # TODO: Implement training logic
-
-
-@cli.command()
-@click.option("--model", default="models/filter.pkl", help="Path to trained model")
-@click.option("--data", default="data/test.csv", help="Test data path")
-def evaluate(model, data):
-    """Evaluate a trained model on test data.
-    
-    Usage: uv run main.py evaluate --model models/filter.pkl
-    """
-    click.echo(f"Evaluating model: {model}")
-    click.echo(f"Using test data: {data}")
-    # TODO: Implement evaluation logic
-
-
-@cli.command()
 def stats():
     """Show statistics about the GameTox dataset.
     
@@ -79,5 +41,119 @@ def stats():
         raise click.Abort()
 
 
+# ============================================================================
+# Regex Filter Commands
+# ============================================================================
+
+@cli.group()
+def regex():
+    """Rule-based regex filter (Level 1)."""
+    pass
+
+
+@regex.command()
+@click.argument("text")
+def predict(text):
+    """Test the regex filter on a single text.
+    
+    Usage: uv run main.py regex predict "this is a test"
+    """
+    click.echo(f"Processing: {text}")
+    # TODO: Implement regex filtering logic
+    click.echo("Result: (not implemented yet)")
+
+
+@regex.command()
+def evaluate():
+    """Evaluate the regex filter on GameTox test data.
+    
+    Usage: uv run main.py regex evaluate
+    """
+    click.echo("Evaluating regex filter...")
+    # TODO: Implement evaluation logic
+    click.echo("(not implemented yet)")
+
+
+@regex.command()
+@click.argument("word")
+def count_word(word):
+    """Count messages containing a specific word.
+    
+    Usage: uv run main.py regex count-word damn
+    """
+    try:
+        df = load_gametox()
+        binary_labels = get_binary_labels(df)
+        
+        # Find messages containing the word (case-insensitive)
+        contains_word = df['message'].str.contains(word, case=False, na=False)
+        
+        total_with_word = contains_word.sum()
+        toxic_with_word = (contains_word & binary_labels).sum()
+        non_toxic_with_word = (contains_word & ~binary_labels).sum()
+        
+        click.echo(f"Messages containing '{word}': {total_with_word:,}")
+        click.echo(f"  Labeled as toxic: {toxic_with_word:,}")
+        click.echo(f"  Labeled as non-toxic: {non_toxic_with_word:,}")
+        
+        if total_with_word > 0:
+            click.echo(f"\nPercentage toxic: {100*toxic_with_word/total_with_word:.1f}%")
+            
+    except FileNotFoundError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+
+
+# ============================================================================
+# Sklearn Filter Commands
+# ============================================================================
+
+@cli.group()
+def sklearn():
+    """Traditional ML classifier using scikit-learn (Level 3)."""
+    pass
+
+
+@sklearn.command()
+@click.option("--output", default="models/sklearn_filter.pkl", help="Output path for trained model")
+@click.option("--test-size", default=0.2, help="Fraction of data to use for testing")
+def train(output, test_size):
+    """Train a scikit-learn text classifier.
+    
+    Usage: uv run main.py sklearn train --output models/my_model.pkl
+    """
+    click.echo(f"Training sklearn model...")
+    click.echo(f"Test size: {test_size}")
+    click.echo(f"Will save to: {output}")
+    # TODO: Implement training logic
+
+
+@sklearn.command()
+@click.argument("text")
+@click.option("--model", default="models/sklearn_filter.pkl", help="Path to trained model")
+def predict(text, model):
+    """Test the sklearn filter on a single text.
+    
+    Usage: uv run main.py sklearn predict "this is a test"
+    """
+    click.echo(f"Processing: {text}")
+    click.echo(f"Using model: {model}")
+    # TODO: Implement prediction logic
+    click.echo("Result: (not implemented yet)")
+
+
+@sklearn.command()
+@click.option("--model", default="models/sklearn_filter.pkl", help="Path to trained model")
+def evaluate(model):
+    """Evaluate the sklearn filter on test data.
+    
+    Usage: uv run main.py sklearn evaluate
+    """
+    click.echo(f"Evaluating sklearn model: {model}")
+    # TODO: Implement evaluation logic
+    click.echo("(not implemented yet)")
+
+
 if __name__ == "__main__":
     cli()
+
