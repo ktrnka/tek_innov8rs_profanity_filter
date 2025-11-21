@@ -100,5 +100,8 @@ def load_reddit_usernames(
         )
 
     df = pd.read_csv(path, usecols=["author"], nrows=sample_size)
+    
+    # Drop any NaN values
+    df = df.dropna()
 
     return df["author"]

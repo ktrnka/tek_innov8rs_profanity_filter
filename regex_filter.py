@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 import click
 
-from data_loader import load_gametox, get_binary_labels
+from data_loader import load_gametox, get_binary_labels, load_reddit_usernames
 from evaluation import print_evaluation_report
 
 
@@ -36,11 +36,17 @@ class RegexProfanityFilter:
         else:
             words = profanity_list
         
-        # Build regex pattern with word boundaries for each word
+        # Build regex pattern with word boundaries for each word (for messages)
         # Use \b for word boundaries and re.IGNORECASE for case-insensitive matching
         escaped_words = [re.escape(word) for word in words]
         pattern = r'\b(?:' + '|'.join(escaped_words) + r')\b'
         self.pattern = re.compile(pattern, re.IGNORECASE)
+        
+        # Build regex pattern without word boundaries (for usernames)
+        # Usernames often concatenate words without spaces: "ihatethisgame"
+        pattern_no_boundaries = r'(?:' + '|'.join(escaped_words) + r')'
+        self.pattern_no_boundaries = re.compile(pattern_no_boundaries, re.IGNORECASE)
+        
         self.word_count = len(words)
     
     def classify(self, text: str) -> bool:
@@ -53,6 +59,20 @@ class RegexProfanityFilter:
             True if profane (contains profanity), False if clean
         """
         return bool(self.pattern.search(text))
+    
+    def classify_username(self, username: str) -> bool:
+        """Classify a username as profane or not.
+        
+        Uses substring matching without word boundaries since usernames
+        often concatenate words (e.g., "ihatethisgame").
+        
+        Args:
+            username: The username to classify
+            
+        Returns:
+            True if profane (contains profanity), False if clean
+        """
+        return bool(self.pattern_no_boundaries.search(username))
     
     @classmethod
     def basic_filter(cls) -> 'RegexProfanityFilter':
@@ -131,6 +151,91 @@ def evaluate(wordlist, samples):
             num_samples=samples,
             filter_name="Regex Filter"
         )
+        
+    except FileNotFoundError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise click.Abort()
+
+
+@regex.command()
+@click.option("--wordlist", "-w", default=None, help="Path to profanity word list file")
+@click.option("--sample-size", default=10000, help="Number of usernames to evaluate (0 for all)")
+@click.option("--review-count", "-n", default=50, help="Number of flagged usernames to review")
+def eval_usernames(wordlist, sample_size, review_count):
+    """Evaluate the regex filter on Reddit usernames.
+    
+    Usage:
+        uv run main.py regex eval-usernames
+        uv run main.py regex eval-usernames --wordlist data/en_profanity.txt --sample-size 50000
+        uv run main.py regex eval-usernames --sample-size 0  # Load all usernames
+    
+    Note: Usernames are not annotated, so we can only estimate precision by manual review.
+    Expected offensive rate: 0.1-5% of usernames.
+    """
+    try:
+        # Convert 0 or negative to None (load all)
+        actual_sample_size = None if sample_size <= 0 else sample_size
+        
+        if actual_sample_size is None:
+            click.echo("Loading ALL Reddit usernames (~25M)...")
+            click.echo("This may take a few minutes...")
+        else:
+            click.echo(f"Loading {sample_size:,} Reddit usernames...")
+        
+        usernames = load_reddit_usernames(sample_size=actual_sample_size)
+        
+        if wordlist:
+            filter_obj = RegexProfanityFilter(filepath=wordlist)
+            click.echo(f"Using custom wordlist: {wordlist}")
+        else:
+            filter_obj = RegexProfanityFilter.basic_filter()
+            click.echo("Using basic built-in wordlist")
+        
+        click.echo(f"Filter contains {filter_obj.word_count} profane words")
+        click.echo("\nNote: Using substring matching (no word boundaries)")
+        click.echo("      This catches concatenated words like 'ihatethisgame'\n")
+        
+        click.echo("Classifying usernames...")
+        flagged = usernames.apply(filter_obj.classify_username)
+        
+        flagged_count = flagged.sum()
+        flagged_pct = 100 * flagged_count / len(usernames)
+        
+        click.echo("\n" + "="*60)
+        click.echo("RESULTS")
+        click.echo("="*60)
+        click.echo(f"Total usernames evaluated: {len(usernames):,}")
+        click.echo(f"Flagged as offensive: {flagged_count:,} ({flagged_pct:.2f}%)")
+        click.echo(f"Clean: {len(usernames) - flagged_count:,} ({100-flagged_pct:.2f}%)")
+        
+        if flagged_count == 0:
+            click.echo("\nNo offensive usernames found!")
+            click.echo("This may indicate the filter is too strict with word boundaries")
+            click.echo("or the sample doesn't contain offensive usernames.")
+            return
+        
+        # Show flagged usernames for manual review
+        flagged_usernames = usernames[flagged]
+        review_sample = min(review_count, len(flagged_usernames))
+        
+        click.echo("\n" + "="*60)
+        click.echo(f"FLAGGED USERNAMES FOR MANUAL REVIEW")
+        click.echo(f"Showing {review_sample} of {len(flagged_usernames)} total")
+        click.echo("="*60)
+        click.echo("Review these to estimate precision (true positives / flagged):\n")
+        
+        sample = flagged_usernames.sample(n=review_sample, random_state=42)
+        for i, username in enumerate(sample, 1):
+            click.echo(f"{i:3d}. {username}")
+        
+        click.echo("\n" + "="*60)
+        click.echo("PRECISION ESTIMATION")
+        click.echo("="*60)
+        click.echo("Manually count how many of the above usernames are actually offensive.")
+        click.echo(f"Precision ≈ (offensive count) / {review_sample}")
+        click.echo("\nExpected offensive rate in general population: 0.1-5%")
+        click.echo(f"If precision is high (>80%), estimated true offensive count: ~{int(flagged_count * 0.9):,}")
+        click.echo(f"If precision is medium (50%), estimated true offensive count: ~{int(flagged_count * 0.5):,}")
         
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
