@@ -211,4 +211,4 @@ data/**
 
 # OpenRouter API key, etc shouldn't be committed to git
 .env
-models/sklearn_filter.pkl
+models/**
