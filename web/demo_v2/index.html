@@ -1,18 +1,239 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ML Model Demo</title>
+  <title>Profanity Filter Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    .input-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #textInput {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #textInput:focus {
+      border-color: #4CAF50;
+    }
+
+    #classifyBtn {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      background: #4CAF50;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #classifyBtn:hover:not(:disabled) {
+      background: #45a049;
+    }
+
+    #classifyBtn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .status {
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .status.loading {
+      display: block;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-left: 4px solid #1976d2;
+    }
+
+    .status.error {
+      display: block;
+      background: #ffebee;
+      color: #c62828;
+      border-left: 4px solid #c62828;
+    }
+
+    .status.success {
+      display: block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-left: 4px solid #2e7d32;
+    }
+
+    #result {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      min-height: 100px;
+    }
+
+    #result:empty::before {
+      content: 'Results will appear here...';
+      color: #999;
+      font-style: italic;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #1976d2;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <h1>Minimal ONNX Inference Demo</h1>
+  <h1>Profanity Filter Demo</h1>
+  
+  <div class="input-container">
+    <input 
+      type="text" 
+      id="textInput" 
+      placeholder="Enter text to classify..." 
+      autocomplete="off"
+    />
+    <button id="classifyBtn">Classify</button>
+  </div>
+
+  <div id="status" class="status"></div>
+  <div id="result"></div>
+
   <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0';
-    // const pipe = await pipeline('text-classification', 'keith-trnka/hgjghjghj');
-    const pipe = await pipeline('text-classification', 'Xenova/bert-base-multilingual-uncased-sentiment');
+    
+    const textInput = document.getElementById('textInput');
+    const classifyBtn = document.getElementById('classifyBtn');
+    const statusDiv = document.getElementById('status');
+    const resultDiv = document.getElementById('result');
+    
+    let pipe = null;
+    let isLoading = false;
 
-    // Run and display result
-    const result = await pipe('This is some example input text to classify.');
-    document.body.insertAdjacentHTML('beforeend', `<pre>${JSON.stringify(result, null, 2)}</pre>`);
+    // Initialize model on page load
+    async function initModel() {
+      try {
+        showStatus('loading', '<span class="spinner"></span>Loading model... (this may take a moment on first load)');
+        classifyBtn.disabled = true;
+        
+        // pipe = await pipeline('text-classification', 'keith-trnka/hgjghjghj');
+        pipe = await pipeline('text-classification', 'Xenova/bert-base-multilingual-uncased-sentiment');
+        
+        showStatus('success', 'Model loaded! Ready to classify text.');
+        classifyBtn.disabled = false;
+        setTimeout(() => hideStatus(), 3000);
+      } catch (error) {
+        showStatus('error', `Failed to load model: ${error.message}`);
+        console.error('Model loading error:', error);
+      }
+    }
+
+    async function classifyText() {
+      const text = textInput.value.trim();
+      
+      if (!text) {
+        showStatus('error', 'Please enter some text to classify.');
+        setTimeout(() => hideStatus(), 3000);
+        return;
+      }
+
+      if (!pipe) {
+        showStatus('error', 'Model not loaded yet. Please wait...');
+        return;
+      }
+
+      if (isLoading) return;
+
+      try {
+        isLoading = true;
+        classifyBtn.disabled = true;
+        showStatus('loading', '<span class="spinner"></span>Classifying...');
+        resultDiv.textContent = '';
+
+        const result = await pipe(text);
+        
+        resultDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+        showStatus('success', 'Classification complete!');
+        setTimeout(() => hideStatus(), 2000);
+      } catch (error) {
+        showStatus('error', `Classification failed: ${error.message}`);
+        console.error('Classification error:', error);
+      } finally {
+        isLoading = false;
+        classifyBtn.disabled = false;
+      }
+    }
+
+    function showStatus(type, message) {
+      statusDiv.className = `status ${type}`;
+      statusDiv.innerHTML = message;
+    }
+
+    function hideStatus() {
+      statusDiv.className = 'status';
+      statusDiv.textContent = '';
+    }
+
+    // Event listeners
+    classifyBtn.addEventListener('click', classifyText);
+    textInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        classifyText();
+      }
+    });
+
+    // Initialize on page load
+    initModel();
   </script>
 </body>
 </html>
