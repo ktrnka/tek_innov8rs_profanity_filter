@@ -9,4 +9,8 @@ dependencies = [
     "skl2onnx>=1.16.0",
     "onnxruntime>=1.16.0",
     "packaging>=24.0",
+    "dotenv>=0.9.9",
+    "openai>=2.8.1",
+    "python-dotenv>=1.2.1",
+    "pydantic>=2.12.4",
 ]

@@ -9,6 +9,7 @@ import click
 from data_loader import load_gametox, get_binary_labels, ToxicityLabel
 from regex_filter import regex
 from sklearn_filter import sklearn
+from llm_filter import llm
 
 
 @click.group()
@@ -52,6 +53,11 @@ cli.add_command(regex)
 # Sklearn Filter Commands
 # ============================================================================
 cli.add_command(sklearn)
+
+# ============================================================================
+# LLM Filter Commands
+# ============================================================================
+cli.add_command(llm)
 
 
 if __name__ == "__main__":
