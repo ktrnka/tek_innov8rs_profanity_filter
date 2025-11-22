@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ML Model Demo</title>
+</head>
+<body>
+  <h1>Minimal ONNX Inference Demo</h1>
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.0';
+    // const pipe = await pipeline('text-classification', 'keith-trnka/hgjghjghj');
+    const pipe = await pipeline('text-classification', 'Xenova/bert-base-multilingual-uncased-sentiment');
+
+    // Run and display result
+    const result = await pipe('This is some example input text to classify.');
+    document.body.insertAdjacentHTML('beforeend', `<pre>${JSON.stringify(result, null, 2)}</pre>`);
+  </script>
+</body>
+</html>

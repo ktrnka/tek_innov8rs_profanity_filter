@@ -140,3 +140,10 @@ General population baseline: 0.1-5% of usernames are offensive
 - Our caps method (0.55% flagged) is within this range
 - Sklearn method (0.07%) is likely under-flagging
 - Substring method (3.51%) is near the upper bound but with many false positives
+
+# Serving from Javascript
+
+- Failed: Running Transformers.js locally with npm/parcel. It looks like it may need some env variables but I'm not sure which. Without those, it generates invalid JS when packing.
+- Worked: Loading Transformers.js from CDN.
+- Worked: Running an existing BERT model.
+- Failed: Running my model. It failed because it needed files like tokenizer.json, config.json. From some searches, it seems that Huggingface does not support tokenizers that are embedded within the ONNX file at all and there are no tools to convert

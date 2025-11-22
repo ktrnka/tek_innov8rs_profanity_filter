@@ -212,3 +212,8 @@ data/**
 # OpenRouter API key, etc shouldn't be committed to git
 .env
 models/**
+
+# JS stuff
+.parcel-cache/
+node_modules/
+package-lock.json
