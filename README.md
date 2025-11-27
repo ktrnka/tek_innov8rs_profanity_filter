@@ -80,10 +80,22 @@ You'll build a simplified version of a production profanity filter, implementing
 
 ### Level 2: LLM-Based Filter
 
+**Important: Rate Limits for Free Models**
+
+OpenRouter has strict rate limits for free models:
+- **50 requests per day** if you have less than $10 in credits
+- **1000 requests per day** if you purchase at least $10 in credits
+- **20 requests per minute** velocity limit
+
+**Recommended approach**: Start small with batches of 10 messages to stay well under the daily limit. Even with 50-100 messages, you can meaningfully compare LLM vs regex performance. Hard examples (messages where regex struggles) are especially valuable for demonstrating differences between approaches.
+
+See [OpenRouter rate limits documentation](https://openrouter.ai/docs/api/reference/limits) for details.
+
 **Tasks:**
 1. Implement an LLM-powered profanity detector:
    - Use [OpenRouter](https://openrouter.ai/) for easy access to free models
    - Design an effective prompt for binary classification
+   - **Start with small samples** (10 messages) due to rate limits
 
 2. Model comparison:
    - Test multiple models (e.g., `openai/gpt-oss-20b:free`, `x-ai/grok-4.1-fast`, `meta-llama/llama-3.3-70b-instruct:free`)
