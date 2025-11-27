@@ -19,9 +19,30 @@ This is an educational project building a profanity filter for gaming chat, base
 
 ## Project Structure
 
+Each level is a separate Python project with its own virtual environment, initialized using `uv init --venv`:
+
 ```
 tek_innov8rs_profanity_filter/
-├── data/                    # Datasets (gitignored, must be downloaded)
+├── level1-rule-based/       # Level 1: Rule-based approach
+│   ├── .venv/              # Isolated virtual environment
+│   ├── pyproject.toml      # Dependencies for this level
+│   ├── src/                # Source code
+│   └── ...
+├── level2-llm-based/        # Level 2: LLM-based approach
+│   ├── .venv/
+│   ├── pyproject.toml
+│   ├── src/
+│   └── ...
+├── level3-traditional-ml/   # Level 3: Traditional ML approach
+│   ├── .venv/
+│   ├── pyproject.toml
+│   ├── src/
+│   └── ...
+├── level4-advanced/         # Level 4: Advanced approaches
+│   ├── .venv/
+│   ├── pyproject.toml
+│   └── ...
+├── data/                    # Shared datasets (gitignored)
 │   ├── GameTox/            # Gaming chat with toxicity labels
 │   └── reddit-usernames/   # Unlabeled usernames for testing
 ├── docs/                    # Documentation and research
@@ -29,8 +50,28 @@ tek_innov8rs_profanity_filter/
 ├── .claude/                 # Custom Claude Code configuration
 │   ├── agents/             # Custom agents (@research-documentation-agent)
 │   └── commands/           # Slash commands (/idea-next, /fix-issue, etc.)
+├── CLAUDE.md               # This file
 └── README.md               # Detailed level-by-level instructions
 ```
+
+### Setting Up a New Level
+
+```bash
+# Create the directory
+mkdir level1-rule-based
+
+# Initialize with uv (creates pyproject.toml, .venv/, src/ structure)
+cd level1-rule-based
+uv init --venv
+
+# Add dependencies for this level
+uv add <package-name>
+
+# Reference shared data from parent directory
+# Use ../data/ in your code
+```
+
+Each level is self-contained with isolated dependencies, but all share the `data/` directory at the root.
 
 ## Key Datasets
 
@@ -42,6 +83,14 @@ Both datasets must be manually downloaded to `data/`:
 The `data/` directory is gitignored to avoid committing large files.
 
 ## Environment Setup
+
+**Package Management**: This project uses **`uv`** instead of `pip` for all package management, dependency installation, and virtual environment operations.
+
+- Install packages: `uv pip install <package>`
+- Create virtual environment: `uv venv`
+- Activate environment: `source .venv/bin/activate` (Unix) or `.venv\Scripts\activate` (Windows)
+- Install from requirements: `uv pip install -r requirements.txt`
+- **Never use `pip` directly - always use `uv`**
 
 **API Keys**: Store in `.env` file (gitignored):
 ```
@@ -57,7 +106,7 @@ Required for Level 2 (LLM-based filter). Get free key from https://openrouter.ai
 - `python-dotenv` - For environment variable management
 - `jupyter` or `marimo` - For notebook exploration (optional)
 
-Install as needed based on the level being implemented.
+Install as needed based on the level being implemented using `uv pip install <package>`.
 
 ## Development Workflow
 
