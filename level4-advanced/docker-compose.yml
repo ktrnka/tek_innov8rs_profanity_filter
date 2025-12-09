@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  profanity-filter-api:
+    build: .
+    container_name: profanity-filter
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount models directory for easier updates
+      - ./modernbert_multiclass:/app/modernbert_multiclass
+      - ./modernbert_finetuned:/app/modernbert_finetuned
+      - ../level3-traditional-ml:/app/level3-traditional-ml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+# Optional: Add nginx reverse proxy for production
+# nginx:
+#   image: nginx:alpine
+#   ports:
+#     - "80:80"
+#   volumes:
+#     - ./nginx.conf:/etc/nginx/nginx.conf
+#   depends_on:
+#     - profanity-filter-api

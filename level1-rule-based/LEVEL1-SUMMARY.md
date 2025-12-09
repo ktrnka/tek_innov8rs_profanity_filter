@@ -115,13 +115,13 @@ stfu, trash, dumb, noob, noobs, bot, bots, camper, campers, camping
 
 **Results:**
 ```
-             Basic (7)     →   Expanded (29)   →   Change
-Recall:      7.4%              46.2%              +389%
-Precision:   82.8%             86.6%              +3.8%
-F1-score:    0.135             0.603              +347%
-Accuracy:    82.1%             88.4%              +6.3%
-
-Toxic caught: 752 / 10,204     4,719 / 10,204     +3,967
+Metric          Basic (7)       Expanded (29)    Change
+────────────────────────────────────────────────────────
+Recall          7.4%            46.2%            +389%
+Precision       82.8%           86.6%            +3.8%
+F1-score        0.135           0.603            +347%
+Accuracy        82.1%           88.4%            +6.3%
+Toxic caught    752 / 10,204    4,719 / 10,204   +3,967
 ```
 
 **Key Finding:** Data-driven word selection improved BOTH precision AND recall (no tradeoff!) because words were strongly toxic in gaming context.
@@ -144,11 +144,12 @@ Toxic caught: 752 / 10,204     4,719 / 10,204     +3,967
 
 **Results:**
 ```
-Metric          Our Detector   alt-profanity-check   Difference
-Precision       86.6%          76.5%                 +10.1%  ✓
-Recall          46.2%          43.1%                 +3.1%   ✓
-F1-Score        0.603          0.552                 +0.051  ✓
-Accuracy        88.4%          86.7%                 +1.7%   ✓
+Metric       Our Detector    alt-profanity-check    Difference
+─────────────────────────────────────────────────────────────────
+Precision    86.4%           76.5%                  +9.9%   ✓
+Recall       46.3%           43.1%                  +3.2%   ✓
+F1-Score     0.603           0.552                  +0.051  ✓
+Accuracy     88.4%           86.7%                  +1.7%   ✓
 ```
 
 **🎉 Beat ML baseline on ALL metrics!**
@@ -174,16 +175,17 @@ Successfully built rule-based filter that outperforms ML baseline on organic dat
 
 **Results - Basic Detector (No Normalization):**
 ```
-Category                      Bypass Rate    Status
-Leetspeak                     100.0%         🔴 CRITICAL
-Spacing                       100.0%         🔴 CRITICAL
-Character Insertion           100.0%         🔴 CRITICAL
-Homoglyphs (Unicode)          100.0%         🔴 CRITICAL
-Partial Masking               100.0%         🔴 CRITICAL
-Phonetic Spelling             100.0%         🔴 CRITICAL
-Repeated Characters           100.0%         🔴 CRITICAL
-───────────────────────────────────────────────────────
-OVERALL                       100.0%         🔴 CRITICAL
+Category                Bypass Rate    Status
+──────────────────────────────────────────────────────
+Leetspeak               100.0%         🔴 CRITICAL
+Spacing                 100.0%         🔴 CRITICAL
+Character Insertion     100.0%         🔴 CRITICAL
+Homoglyphs (Unicode)    100.0%         🔴 CRITICAL
+Partial Masking         100.0%         🔴 CRITICAL
+Phonetic Spelling       100.0%         🔴 CRITICAL
+Repeated Characters     100.0%         🔴 CRITICAL
+──────────────────────────────────────────────────────
+OVERALL                 100.0%         🔴 CRITICAL
 ```
 
 **Detection rate: 0/53 (0.0%)**
@@ -215,16 +217,17 @@ OVERALL                       100.0%         🔴 CRITICAL
 
 **Bypass Detection Results:**
 ```
-Category                      Basic    Normalized   Improvement
-Leetspeak                     0.0%     92.3%        +92.3% 📈
-Spacing                       0.0%     0.0%         +0.0%  ❌
-Character Insertion           0.0%     85.7%        +85.7% 📈
-Homoglyphs (Unicode)          0.0%     100.0%       +100%  📈
-Partial Masking               0.0%     100.0%       +100%  📈
-Phonetic Spelling             0.0%     0.0%         +0.0%  ❌
-Repeated Characters           0.0%     66.7%        +66.7% 📈
+Category                Basic    Normalized    Improvement
 ────────────────────────────────────────────────────────────
-OVERALL                       0.0%     64.2%        +64.2% 📈
+Leetspeak               0.0%     92.3%         +92.3% 📈
+Spacing                 0.0%     0.0%          +0.0%  ❌
+Character Insertion     0.0%     85.7%         +85.7% 📈
+Homoglyphs (Unicode)    0.0%     100.0%        +100%  📈
+Partial Masking         0.0%     100.0%        +100%  📈
+Phonetic Spelling       0.0%     0.0%          +0.0%  ❌
+Repeated Characters     0.0%     66.7%         +66.7% 📈
+────────────────────────────────────────────────────────────
+OVERALL                 0.0%     64.2%         +64.2% 📈
 ```
 
 **Detection rate: 34/53 (64.2%)**
@@ -241,11 +244,12 @@ OVERALL                       0.0%     64.2%        +64.2% 📈
 
 **Impact on Organic Data (GameTox):**
 ```
-Metric       Without Norm    With Norm       Change
-Recall       46.2%           46.3%           +0.1% ➡️
-Precision    86.6%           86.4%           -0.2% ➡️
-F1-score     0.603           0.603           +0.0% ➡️
-Accuracy     88.4%           88.4%           +0.0% ➡️
+Metric        Without Norm    With Norm    Change
+──────────────────────────────────────────────────────
+Recall        46.2%           46.3%        +0.1% ➡️
+Precision     86.6%           86.4%        -0.2% ➡️
+F1-score      0.603           0.603        +0.0% ➡️
+Accuracy      88.4%           88.4%        +0.0% ➡️
 ```
 
 **Critical Finding:** Normalization has MINIMAL impact on organic data (essentially unchanged) while dramatically improving adversarial detection.
@@ -256,13 +260,16 @@ Accuracy     88.4%           88.4%           +0.0% ➡️
 
 **Complete Results:**
 ```
-Metric              No Norm    Normalized   alt-profanity   Best
-Messages Flagged    5,451      5,468        5,751           —
-Accuracy            88.4%      88.4%        86.7%           No Norm
-Precision           86.6%      86.4%        76.5%           No Norm
-Recall              46.2%      46.3%        43.1%           Normalized ✓
-F1-Score            0.603      0.603        0.552           No Norm
+Metric              No Norm    Normalized    alt-profanity    Best
+─────────────────────────────────────────────────────────────────────
+Messages Flagged    5,451      5,468         5,751            —
+Accuracy            88.4%      88.4%         86.7%            No Norm
+Precision           86.6%      86.4%         76.5%            No Norm
+Recall              46.2%      46.3%         43.1%            Normalized ✓
+F1-Score            0.603      0.603         0.552            No Norm
 ```
+
+Note: These values match the current script output. The normalized detector shows 86.4% precision and 46.3% recall.
 
 **Normalized Detector vs. alt-profanity-check:**
 - +9.9% precision
@@ -359,26 +366,26 @@ F1-Score            0.603      0.603        0.552           No Norm
 
 ### Final Metrics - Organic Data (GameTox)
 
-| Metric | Value | Rank vs Baseline |
-|--------|-------|------------------|
-| **Precision** | 86.4% | +9.9% ✓ |
-| **Recall** | 46.3% | +3.2% ✓ |
-| **F1-Score** | 0.603 | +5.1% ✓ |
-| **Accuracy** | 88.4% | +1.7% ✓ |
-| **False Positive Rate (usernames)** | 0.02% | Excellent |
+| Metric                             | Value | Rank vs Baseline |
+|------------------------------------|-------|------------------|
+| **Precision**                      | 86.4% | +9.9% ✓          |
+| **Recall**                         | 46.3% | +3.2% ✓          |
+| **F1-Score**                       | 0.603 | +5.1% ✓          |
+| **Accuracy**                       | 88.4% | +1.7% ✓          |
+| **False Positive Rate (usernames)**| 0.02% | Excellent        |
 
 ### Final Metrics - Adversarial Bypasses
 
-| Category | Detection Rate | Status |
-|----------|----------------|--------|
-| **Leetspeak** | 92.3% | ✅ Excellent |
-| **Spacing** | 0.0% | ❌ Known limitation |
-| **Character Insertion** | 85.7% | ✅ Excellent |
-| **Homoglyphs** | 100.0% | ✅ Perfect |
-| **Partial Masking** | 100.0% | ✅ Perfect |
-| **Phonetic** | 0.0% | ❌ Would need dictionary |
-| **Repeated Chars** | 66.7% | ✅ Good |
-| **OVERALL** | **64.2%** | ✅ **Strong** |
+| Category                | Detection Rate | Status                    |
+|-------------------------|----------------|---------------------------|
+| **Leetspeak**           | 92.3%          | ✅ Excellent              |
+| **Spacing**             | 0.0%           | ❌ Known limitation       |
+| **Character Insertion** | 85.7%          | ✅ Excellent              |
+| **Homoglyphs**          | 100.0%         | ✅ Perfect                |
+| **Partial Masking**     | 100.0%         | ✅ Perfect                |
+| **Phonetic**            | 0.0%           | ❌ Would need dictionary  |
+| **Repeated Chars**      | 66.7%          | ✅ Good                   |
+| **OVERALL**             | **64.2%**      | ✅ **Strong**             |
 
 ### Cost Analysis
 

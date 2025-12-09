@@ -211,3 +211,64 @@ data/**
 
 # OpenRouter API key, etc shouldn't be committed to git
 .env
+
+# Python cache
+level1-rule-based/__pycache__/
+level1-rule-based/**/*.pyc
+
+# UV environment lock (optional)
+level1-rule-based/uv.lock
+
+# Level 2 LLM-based artifacts
+level2-llm-based/*.log
+level2-llm-based/*.pkl
+level2-llm-based/debug_response_*.txt
+
+# Python bytecode caches
+level2-llm-based/__pycache__/
+level2-llm-based/**/*.pyc
+
+# Level 3 ML artifacts (large binary model files)
+level3-traditional-ml/*.pkl
+
+# Python cache
+level3-traditional-ml/__pycache__/
+level3-traditional-ml/**/*.pyc
+
+# Optional: ignore lock file
+level3-traditional-ml/uv.lock
+
+# -----------------------------
+# LEVEL 4 (Advanced ML Artifacts)
+# -----------------------------
+
+# Massive HuggingFace trained model checkpoints
+level4-advanced/modernbert_finetuned/
+level4-advanced/modernbert_multiclass/
+
+# Large results / model outputs / datasets
+level4-advanced/external_dataset_results.csv
+
+# Training outputs and logs
+level4-advanced/*.log
+
+# Python cache
+level4-advanced/__pycache__/
+level4-advanced/**/*.pyc
+
+# HuggingFace checkpoint subfiles – in case folders show up again
+*.safetensors
+*.bin
+*.pt
+trainer_state.json
+rng_state.pth
+optimizer.pt
+scheduler.pt
+tokenizer.json
+tokenizer_config.json
+special_tokens_map.json
+training_args.bin
+
+# Optional: uv.lock
+level4-advanced/uv.lock
+

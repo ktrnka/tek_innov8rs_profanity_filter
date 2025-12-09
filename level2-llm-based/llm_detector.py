@@ -18,6 +18,7 @@ import os
 import time
 import csv
 import json
+import pickle
 from pathlib import Path
 from dotenv import load_dotenv
 import requests
@@ -95,6 +96,39 @@ class LLMProfanityDetector:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.rate_limited = False  # Track if we've hit rate limits
+
+        # Response caching for repeated messages
+        self.cache = {}  # message -> prediction mapping
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+        # JSON mode support (model-specific)
+        # Only certain models properly support response_format parameter
+        self.supports_json_mode = self._check_json_mode_support()
+
+    def _check_json_mode_support(self):
+        """Check if this model supports JSON mode."""
+        # Models known to support JSON mode properly
+        json_mode_models = [
+            'x-ai/grok',  # Grok models support it
+            'openai/gpt-4',  # GPT-4 models support it
+            'anthropic/claude',  # Claude models support it
+        ]
+
+        # Check if model name starts with any supported prefix
+        for prefix in json_mode_models:
+            if self.model_name.startswith(prefix):
+                return True
+        return False
+
+    def _make_cache_key(self, message, prompt_version):
+        """Generate cache key from message and prompt version."""
+        import hashlib
+        # Normalize message (lowercase, strip whitespace)
+        normalized = message.lower().strip()
+        # Create hash of (message + prompt_version)
+        key_str = f"{normalized}|{prompt_version}"
+        return hashlib.md5(key_str.encode()).hexdigest()
 
     @staticmethod
     def get_prompt_v1(message):
@@ -216,13 +250,14 @@ Is this message toxic? Answer only "Yes" or "No"."""
             print(f"Error calling LLM API: {e}")
             return False
 
-    def predict_batch_single_request(self, messages, prompt_version=1):
+    def predict_batch_single_request(self, messages, prompt_version=1, enable_cache=True):
         """
         Predict profanity for all messages in a single API request (batched).
 
         Args:
             messages: List of text messages
             prompt_version: Which prompt to use (currently uses optimized batch prompt)
+            enable_cache: If True, check cache and store results (default True)
 
         Returns:
             List of predictions (1 for profane, 0 for clean), or None if failed
@@ -230,26 +265,164 @@ Is this message toxic? Answer only "Yes" or "No"."""
         if not messages:
             return []
 
-        # Build batch prompt
+        # Check cache for each message
+        if enable_cache:
+            predictions = [None] * len(messages)  # Placeholder for results
+            uncached_messages = []
+            uncached_indices = []
+
+            for i, msg in enumerate(messages):
+                cache_key = self._make_cache_key(msg, prompt_version)
+                if cache_key in self.cache:
+                    # Cache hit!
+                    predictions[i] = self.cache[cache_key]
+                    self.cache_hits += 1
+                else:
+                    # Cache miss - need to query API
+                    uncached_messages.append(msg)
+                    uncached_indices.append(i)
+                    self.cache_misses += 1
+
+            # If all messages were cached, return immediately
+            if not uncached_messages:
+                return predictions
+
+            # Update messages to only include uncached ones
+            messages = uncached_messages
+        else:
+            predictions = None
+            uncached_indices = None
+
+        # Build batch prompt based on version
         numbered_messages = "\n".join([f"{i+1}. \"{msg}\"" for i, msg in enumerate(messages)])
 
-        batch_prompt = f"""Classify each of the following {len(messages)} messages as either "toxic" or "clean".
+        if prompt_version == 1:
+            # V1: Concise, rule-based (current baseline)
+            batch_prompt = f"""You must classify EXACTLY {len(messages)} messages as either "toxic" or "clean".
 
-A message is TOXIC if it contains:
+TOXIC means the message contains:
 - Profanity or vulgar language
 - Insults or personal attacks
 - Hate speech or discriminatory language
 
-A message is CLEAN otherwise.
+CLEAN means none of the above.
+
+Messages to classify:
+{numbered_messages}
+
+CRITICAL INSTRUCTIONS:
+1. Return EXACTLY {len(messages)} items - no more, no less
+2. Output ONLY a valid JSON object with a "classifications" array
+3. Use only lowercase "toxic" or "clean" for each entry
+4. Maintain the same order as the numbered messages above
+5. Do not include explanations, notes, or any text outside the JSON object
+
+Required output format: {{"classifications": ["clean", "toxic", "clean", ...]}}
+"""
+        elif prompt_version == 2:
+            # V2: With gaming context examples
+            batch_prompt = f"""Classify {len(messages)} gaming chat messages as "toxic" or "clean".
+
+TOXIC examples:
+- Direct profanity: "fuck you", "shit player", "damn noob"
+- Insults: "you're an idiot", "stupid teammate", "trash player"
+- Hate speech: slurs, discriminatory language
+
+CLEAN examples:
+- Neutral: "gg", "nice try", "let's go"
+- Friendly banter: "haha nice shot", "unlucky mate"
+- Game discussion: "rush B", "defend mid", "good strategy"
+
+Messages to classify:
+{numbered_messages}
+
+Return ONLY a valid JSON object with exactly {len(messages)} classifications:
+{{"classifications": ["clean", "toxic", "clean", ...]}}
+"""
+        elif prompt_version == 3:
+            # V3: Context-aware (understand tone and intent)
+            batch_prompt = f"""Analyze {len(messages)} chat messages for toxicity. Consider CONTEXT and INTENT.
+
+TOXIC indicators:
+- Aggressive intent to harm, insult, or demean
+- Vulgar language used to attack others
+- Discriminatory or hateful speech
+
+NOT toxic (even if contains profanity):
+- Exclamations without targets: "oh shit", "fuck yeah!"
+- Self-deprecation: "I'm so bad at this"
+- Friendly banter between players
+- Gaming slang: "that's sick!" (positive)
 
 Messages:
 {numbered_messages}
 
-Respond with ONLY a JSON array of {len(messages)} classifications in the same order.
-Use exactly "toxic" or "clean" for each entry (lowercase).
-
-Example format: ["toxic", "clean", "toxic", "clean", ...]
+Output valid JSON with {len(messages)} items:
+{{"classifications": ["clean", "toxic", "clean", ...]}}
 """
+        elif prompt_version == 4:
+            # V4: Conservative (minimize false positives)
+            batch_prompt = f"""Classify {len(messages)} messages. Only mark as "toxic" if CLEARLY harmful.
+
+Mark as TOXIC only if:
+- Direct personal attacks or insults
+- Explicit hate speech or slurs
+- Aggressive profanity directed at others
+
+Mark as CLEAN if:
+- Ambiguous or borderline content
+- Profanity without clear target
+- Competitive trash talk
+- Frustration or exclamations
+
+Messages:
+{numbered_messages}
+
+JSON output with {len(messages)} classifications:
+{{"classifications": ["clean", "toxic", "clean", ...]}}
+"""
+        elif prompt_version == 5:
+            # V5: Multi-class (4 categories - based on winning V3 context-aware approach)
+            batch_prompt = f"""Analyze {len(messages)} chat messages and classify each into ONE of these 4 categories. Consider CONTEXT and INTENT.
+
+CATEGORIES:
+
+1. "clean" - Non-toxic messages:
+   - Neutral chat: "gg", "nice try", "let's go"
+   - Friendly banter: "haha nice shot", "unlucky mate"
+   - Game discussion: "rush B", "defend mid", "good strategy"
+   - Exclamations without targets: "oh shit", "fuck yeah!"
+   - Self-deprecation: "I'm so bad at this"
+
+2. "insult" - Insults and flaming (attacking other players):
+   - Direct insults: "you're an idiot", "stupid teammate", "trash player"
+   - Personal attacks on skill: "noob", "you suck", "garbage player"
+   - Aggressive mockery: "imagine being this bad"
+
+3. "offensive" - Other offensive content (profanity without clear target):
+   - General profanity: "this game is shit", "fuck this lag"
+   - Vulgar language not directed at people
+   - Offensive but not hateful or insulting
+
+4. "hate_speech" - Hate speech and harassment:
+   - Discriminatory language based on race, gender, religion, etc.
+   - Slurs and hateful terms
+   - Systematic harassment or threats
+
+Messages:
+{numbered_messages}
+
+CRITICAL INSTRUCTIONS:
+1. Return EXACTLY {len(messages)} items - no more, no less
+2. Output ONLY a valid JSON object with a "classifications" array
+3. Use only lowercase: "clean", "insult", "offensive", or "hate_speech"
+4. Maintain the same order as the numbered messages above
+5. Do not include explanations, notes, or any text outside the JSON object
+
+Required output format: {{"classifications": ["clean", "insult", "offensive", "hate_speech", ...]}}
+"""
+        else:
+            raise ValueError(f"Invalid prompt_version: {prompt_version}. Must be 1-5.")
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -262,8 +435,12 @@ Example format: ["toxic", "clean", "toxic", "clean", ...]
                 {"role": "user", "content": batch_prompt}
             ],
             "temperature": 0.0,
-            "max_tokens": 1000  # Enough for JSON array of up to ~300 classifications
+            "max_tokens": 5000  # Increased to handle larger batches (300 items needs ~3000-4000 tokens)
         }
+
+        # Only add JSON mode for models that support it
+        if self.supports_json_mode:
+            payload["response_format"] = {"type": "json_object"}
 
         try:
             print(f"\n   Sending batch request ({len(messages)} messages)...")
@@ -312,38 +489,109 @@ Example format: ["toxic", "clean", "toxic", "clean", ...]
             # Extract and parse JSON response
             answer = result['choices'][0]['message']['content'].strip()
 
+            # DEBUG: Save full response for analysis
+            debug_file = Path(__file__).parent / f"debug_response_{self.model_name.replace('/', '_')}.txt"
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(f"Model: {self.model_name}\n")
+                f.write(f"Messages sent: {len(messages)}\n")
+                f.write(f"Response length: {len(answer)} characters\n")
+                f.write("="*80 + "\n")
+                f.write(answer)
+            print(f"\n   📝 Debug: Full response saved to {debug_file.name}")
+
             # Try to parse JSON
             import json
             try:
-                # Extract JSON array from response (handle markdown code blocks)
-                if '```' in answer:
+                # Handle markdown code blocks if not in JSON mode
+                cleaned_answer = answer
+                if not self.supports_json_mode and '```' in answer:
                     # Extract content between code fences
                     json_start = answer.find('[')
-                    json_end = answer.rfind(']') + 1
-                    answer = answer[json_start:json_end]
+                    if json_start == -1:
+                        json_start = answer.find('{')
+                    json_end = max(answer.rfind(']'), answer.rfind('}')) + 1
+                    if json_start != -1 and json_end > json_start:
+                        cleaned_answer = answer[json_start:json_end]
 
-                classifications = json.loads(answer)
+                result_obj = json.loads(cleaned_answer)
+
+                # Extract classifications array from JSON object or array
+                if isinstance(result_obj, dict) and 'classifications' in result_obj:
+                    classifications = result_obj['classifications']
+                elif isinstance(result_obj, list):
+                    # Direct array response (non-JSON mode)
+                    classifications = result_obj
+                else:
+                    print(f"\n   ❌ Unexpected JSON structure: {list(result_obj.keys()) if isinstance(result_obj, dict) else type(result_obj)}")
+                    print(f"\n   📝 Check {debug_file.name} to see what was returned")
+                    return None
 
                 # Validate we got the right number of predictions
                 if len(classifications) != len(messages):
                     print(f"\n   ⚠ Warning: Expected {len(messages)} classifications, got {len(classifications)}")
+                    print(f"\n   📝 Check {debug_file.name} to see what was returned")
                     return None
 
-                # Convert to binary predictions
-                predictions = [1 if c.lower() == "toxic" else 0 for c in classifications]
-                print(f"   ✓ Batch classified in {latency:.2f}s")
-                return predictions
+                # Convert classifications based on prompt version
+                if prompt_version == 5:
+                    # Multi-class: map string labels to numeric (0=clean, 1=insult, 2=offensive, 3=hate_speech)
+                    label_map = {
+                        "clean": 0,
+                        "insult": 1,
+                        "offensive": 2,
+                        "hate_speech": 3
+                    }
+                    fresh_predictions = [label_map.get(c.lower(), 0) for c in classifications]
+                else:
+                    # Binary: toxic=1, clean=0
+                    fresh_predictions = [1 if c.lower() == "toxic" else 0 for c in classifications]
+
+                # Store fresh predictions in cache
+                if enable_cache:
+                    for i, msg in enumerate(messages):
+                        cache_key = self._make_cache_key(msg, prompt_version)
+                        self.cache[cache_key] = fresh_predictions[i]
+
+                    # Combine cached and fresh predictions in correct order
+                    for i, pred in zip(uncached_indices, fresh_predictions):
+                        predictions[i] = pred
+
+                    mode_str = "JSON mode" if self.supports_json_mode else "prompt-only"
+                    total_count = len(predictions)
+                    cached_count = total_count - len(fresh_predictions)
+                    if cached_count > 0:
+                        print(f"   ✓ Batch classified in {latency:.2f}s ({mode_str}, {len(fresh_predictions)} API + {cached_count} cached)")
+                    else:
+                        print(f"   ✓ Batch classified in {latency:.2f}s ({mode_str})")
+                    return predictions
+                else:
+                    mode_str = "JSON mode" if self.supports_json_mode else "prompt-only"
+                    print(f"   ✓ Batch classified in {latency:.2f}s ({mode_str})")
+                    return fresh_predictions
 
             except json.JSONDecodeError as e:
                 print(f"\n   ❌ Failed to parse JSON response: {e}")
-                print(f"   Response: {answer[:200]}...")
+                print(f"   Response preview: {answer[:200]}...")
+                print(f"\n   📝 Full response saved to {debug_file.name}")
                 return None
 
+        except requests.exceptions.Timeout:
+            print(f"\n   ❌ Request timed out after 60 seconds")
+            print(f"   This batch will be skipped or retried via fallback")
+            return None
+        except requests.exceptions.ConnectionError:
+            print(f"\n   ❌ Network connection error")
+            print(f"   Check your internet connection")
+            return None
+        except KeyError as e:
+            print(f"\n   ❌ Unexpected API response format: {e}")
+            print(f"   Model might not support this request type")
+            return None
         except Exception as e:
-            print(f"\n   ❌ Error in batch request: {e}")
+            print(f"\n   ❌ Unexpected error in batch request: {type(e).__name__}: {e}")
             return None
 
-    def predict_batch(self, messages, show_progress=True, prompt_version=1, use_batch_api=True, batch_size=300):
+    def predict_batch(self, messages, show_progress=True, prompt_version=1, use_batch_api=True, batch_size=10, enable_fallback=False):
         """
         Predict profanity for a batch of messages.
 
@@ -353,13 +601,16 @@ Example format: ["toxic", "clean", "toxic", "clean", ...]
             prompt_version: Which prompt to use
             use_batch_api: If True, split into batches and send batch requests; if False, use individual requests
             batch_size: Number of messages per batch (default 300)
+            enable_fallback: If True, fall back to individual requests on batch failure (EXPENSIVE!)
+                            If False, fail entire model if batch fails (BUDGET-SAFE)
 
         Returns:
-            List of predictions (1 for profane, 0 for clean)
+            List of predictions, or None if failed/rate limited
         """
         # Try batch approach first if enabled
         if use_batch_api:
             all_predictions = []
+            skipped_batches = []
             num_batches = (len(messages) + batch_size - 1) // batch_size  # Ceiling division
 
             if show_progress:
@@ -371,19 +622,30 @@ Example format: ["toxic", "clean", "toxic", "clean", ...]
                 batch_messages = messages[start_idx:end_idx]
 
                 if show_progress:
-                    print(f"\n   Batch {batch_idx + 1}/{num_batches} ({len(batch_messages)} messages)...")
+                    progress_pct = ((batch_idx + 1) / num_batches) * 100
+                    msgs_processed = len(all_predictions) + len(batch_messages)
+                    print(f"\n   Batch {batch_idx + 1}/{num_batches} ({len(batch_messages)} messages) [{progress_pct:.0f}% - {msgs_processed}/{len(messages)} total]")
 
                 predictions = self.predict_batch_single_request(batch_messages, prompt_version)
 
                 if predictions is None:
-                    # Check if we're rate limited - don't waste requests on fallback
+                    # Check if we're rate limited - stop immediately
                     if self.rate_limited:
                         print(f"\n   ⚠ STOPPED: Rate limit hit, cannot continue testing")
                         print(f"   Processed {len(all_predictions)} of {len(messages)} messages before stopping")
-                        return None  # Signal failure to caller
+                        return None
 
-                    # Only fall back for non-rate-limit failures (e.g., JSON parsing issues)
-                    print(f"\n   ⚠ Batch {batch_idx + 1} failed (non-rate-limit), falling back to individual requests...")
+                    # Check if fallback is enabled
+                    if not enable_fallback:
+                        print(f"\n   ❌ Batch {batch_idx + 1} FAILED (JSON parsing or other error)")
+                        print(f"   ⚠ BUDGET-SAFE MODE: Stopping this model (no expensive fallback)")
+                        print(f"   Reason: Fallback would use {len(batch_messages)} additional requests")
+                        print(f"   To enable fallback, set enable_fallback=True (WARNING: expensive!)")
+                        return None  # Fail entire model test
+
+                    # Fallback enabled - use individual requests (EXPENSIVE!)
+                    print(f"\n   ⚠ Batch {batch_idx + 1} failed, falling back to {len(batch_messages)} individual requests...")
+                    print(f"   ⚠ This will use {len(batch_messages)} of your request quota!")
                     predictions = []
                     for msg in batch_messages:
                         is_prof = self.is_profane(msg, prompt_version=prompt_version)
@@ -516,6 +778,14 @@ def calculate_production_cost(avg_input_tokens, avg_output_tokens, input_price_p
     }
 
 
+def save_progress(all_results, filename="level2_progress.pkl"):
+    """Save intermediate results to disk."""
+    filepath = Path(__file__).parent / filename
+    with open(filepath, 'wb') as f:
+        pickle.dump(all_results, f)
+    print(f"\n💾 Progress saved to {filename}")
+
+
 def print_results(model_name, results, stats):
     """Print evaluation results for a model."""
     print("\n" + "="*70)
@@ -578,11 +848,32 @@ def main():
         return
 
     print(f"✓ Dataset found")
-    print(f"\nLoading test sample (4,800 messages = 9% of full dataset)...")
-    print(f"This allows fair comparison with Level 1 if we re-test on same subset.")
 
-    messages, labels = load_gametox(data_path, limit=4800)
-    print(f"Loaded {len(messages)} messages")
+    # Load stratified 200-message sample for fair comparison with Level 1
+    stratified_sample_path = Path(__file__).parent.parent / "data" / "test_subset_200_stratified.csv"
+
+    if stratified_sample_path.exists():
+        print(f"\n✓ Loading stratified 200-message sample (same data for Level 1 & 2 comparison)...")
+        print(f"   File: {stratified_sample_path.name}")
+        print(f"   Sample maintains same toxic/clean ratio as full dataset (11.9% toxic)")
+
+        messages = []
+        labels = []
+        with open(stratified_sample_path, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                messages.append(row['message'])
+                labels.append(float(row['label']))
+
+        print(f"\n   Loaded {len(messages)} messages:")
+        toxic_count = sum(1 for l in labels if l == 1.0)
+        clean_count = len(labels) - toxic_count
+        print(f"   - {toxic_count} toxic messages ({toxic_count/len(labels)*100:.1f}%)")
+        print(f"   - {clean_count} clean messages ({clean_count/len(labels)*100:.1f}%)")
+    else:
+        print(f"\n⚠ Hard examples not found, using first 100 from dataset...")
+        messages, labels = load_gametox(data_path, limit=100)
+        print(f"   Loaded {len(messages)} messages")
 
     # Save this subset for consistent testing across all levels
     subset_path = Path(__file__).parent.parent / "data" / "test_subset_4800.csv"
@@ -592,11 +883,9 @@ def main():
         print(f"\n✓ Test subset already exists at {subset_path}")
         print(f"  Using existing subset for consistency.")
 
-    # FREE models to test (3 models, 16 batches each = 48 requests total)
-    free_models = [
-        "openai/gpt-oss-20b:free",  # Free tier model
-        "x-ai/grok-4.1-fast",  # Fast Grok model
-        "meta-llama/llama-3.3-70b-instruct:free",  # Llama 3.3 70B
+    # Testing only GPT-OSS (missed earlier due to rate limits)
+    test_models = [
+        "openai/gpt-oss-20b:free",  # Free tier
     ]
 
     print(f"\n{'='*70}")
@@ -609,25 +898,28 @@ def main():
     print("\n→ Using Prompt V1 for testing (simpler, fewer tokens)")
 
     print(f"\n{'='*70}")
-    print("  STEP 1: TESTING FREE MODELS")
+    print("  STEP 1: TESTING FREE MODELS (Small Batch Size)")
     print(f"{'='*70}")
-    print(f"\nTesting {len(free_models)} free models on {len(messages)} messages...")
-    print(f"Using BATCH mode: 300 messages per batch")
-    print(f"  - {len(messages)} messages ÷ 300 per batch = 16 batches per model")
-    print(f"  - 3 models × 16 batches = 48 API requests total")
-    print(f"  - Well within 50 requests/day free tier limit")
-    print(f"  - Compare to individual requests: {len(messages) * len(free_models)} requests (would exceed limit)")
+    batch_size = 10  # Proven to work with GPT-3.5
+    num_batches = (len(messages) + batch_size - 1) // batch_size  # Ceiling division
+    total_requests = len(test_models) * num_batches
+
+    print(f"\nTesting FREE models on {len(messages)} stratified messages with SMALL batches...")
+    print(f"Using BATCH mode: {batch_size} messages per batch (proven reliable)")
+    print(f"  - {len(messages)} messages ÷ {batch_size} per batch = {num_batches} batches per model")
+    print(f"  - {len(test_models)} models × {num_batches} batches = {total_requests} API requests total")
+    print(f"  - Fair comparison with Level 1 on same dataset")
 
     all_results = {}
 
-    for model_name in free_models:
+    for model_name in test_models:
         print(f"\n{'─'*70}")
         print(f"Testing: {model_name}")
         print(f"{'─'*70}")
 
         try:
             detector = LLMProfanityDetector(model_name=model_name, rate_limit_per_minute=rate_limit)
-            predictions = detector.predict_batch(messages, show_progress=True, prompt_version=1, use_batch_api=True)
+            predictions = detector.predict_batch(messages, show_progress=True, prompt_version=1, use_batch_api=True, batch_size=batch_size)
 
             # Check if we hit rate limits
             if predictions is None:
@@ -648,8 +940,13 @@ def main():
 
             print_results(model_name, results, stats)
 
+            # Save progress after each model completes
+            save_progress(all_results)
+
         except Exception as e:
-            print(f"❌ Error testing {model_name}: {e}")
+            print(f"❌ Error testing {model_name}: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
 
     # Step 2: Calculate theoretical production costs
@@ -714,18 +1011,14 @@ def main():
 
     print("\n✓ Level 2 testing complete!")
     print("\nBatch mode benefits:")
-    total_batches = len(free_models) * 16  # 3 models × 16 batches
-    individual_requests = len(messages) * len(free_models)  # 4800 × 3
-    batch_time_minutes = (total_batches * 3) / 60  # 3 seconds per request
-    individual_time_hours = (individual_requests * 3) / 3600
-    print(f"  - Used {total_batches} API requests (vs {individual_requests:,} individual)")
-    print(f"  - Stayed within 50 requests/day free tier limit ({total_batches}/50)")
-    print(f"  - Batch size: 300 messages per request")
-    print(f"  - Execution time: ~{batch_time_minutes:.1f} minutes (vs ~{individual_time_hours:.1f} hours for individual)")
-    print(f"  - Request efficiency: {len(messages) / total_batches:.0f} messages per API call")
+    print(f"  - Used {total_requests} API requests (vs {len(messages) * len(test_models)} individual)")
+    print(f"  - Well within 1000 requests/day limit ({total_requests}/1000)")
+    print(f"  - Batch size: {batch_size} messages per request (recommended)")
+    print(f"  - Execution time: ~{total_requests * 2 / 60:.1f} minutes")
+    print(f"  - Request efficiency: {len(messages) / total_requests:.1f} messages per API call")
     print("\nNext steps:")
-    print("  - Re-test Level 1 on data/test_subset_4800.csv (SAME 4,800 messages)")
-    print("  - Use data/test_subset_4800.csv for Level 3 and Level 4 testing")
+    print("  - Test on larger sample if free models work well")
+    print("  - Compare against Level 1 results on same messages")
     print("  - Compare precision, recall, F1 across all levels on same data")
     print("  - Analyze which approach works best for gaming chat")
 

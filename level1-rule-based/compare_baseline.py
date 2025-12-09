@@ -7,7 +7,7 @@ Tests both non-normalized and normalized versions to show progression.
 import csv
 import re
 from pathlib import Path
-from profanity_check import predict
+from profanity_check import predict  # from alt-profanity-check package
 from text_normalizer import TextNormalizer
 
 def load_gametox(data_path):

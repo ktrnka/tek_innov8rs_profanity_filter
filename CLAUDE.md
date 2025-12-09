@@ -205,3 +205,4 @@ Binary classification: profane vs. clean (GameTox has multiple categories but st
 - Clear evaluation reports with precision/recall/F1
 - Analysis of false positives and false negatives
 - Comparison across approaches (rule-based vs LLM vs ML)
+- When we have just enough tokens left to write a summary file for the session. Please inform the situation and do so. THis way I dont have to wait for token resets and I can just start a new session and ask you to read the summary.
