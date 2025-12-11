@@ -142,6 +142,14 @@ See [OpenRouter rate limits documentation](https://openrouter.ai/docs/api/refere
 - [scikit-learn text classification tutorial](https://scikit-learn.org/stable/auto_examples/text/plot_document_classification_20newsgroups.html)
 - [GeeksforGeeks NLP classification guide](https://www.geeksforgeeks.org/nlp/text-classification-using-scikit-learn-in-nlp/)
 
+<details>
+<summary>Additional tips</summary>
+- If you have many hyperparameters, consider code to help tune them. Scikit-learn provides [helpers like grid search or random search](https://scikit-learn.org/stable/modules/grid_search.html).
+- If it's running slowly and you're using TfidfVectorizer, increase min_df to make the model smaller. This also helps to prevent overfitting, but can throw away some useful words so it's good to tune it.
+- [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) works with some sklearn models to easily see what words or ngrams are most important. [Here's an example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23), though you shouldn't need to set the feature names manually.
+- [Lime](https://github.com/marcotcr/lime) is a package I've used to understand why a model gives a particular output on a particular example. If I remember correctly, it can be used with neural networks and other models as well.
+</details>
+
 **Extra Credit:**
 - Package your model in a scikit-learn Pipeline for cleaner deployment
 - Experiment with hyperparameters:
