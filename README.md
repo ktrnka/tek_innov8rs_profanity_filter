@@ -142,14 +142,6 @@ See [OpenRouter rate limits documentation](https://openrouter.ai/docs/api/refere
 - [scikit-learn text classification tutorial](https://scikit-learn.org/stable/auto_examples/text/plot_document_classification_20newsgroups.html)
 - [GeeksforGeeks NLP classification guide](https://www.geeksforgeeks.org/nlp/text-classification-using-scikit-learn-in-nlp/)
 
-<details>
-<summary>Additional tips</summary>
-- If you have many hyperparameters, consider code to help tune them. Scikit-learn provides [helpers like grid search or random search](https://scikit-learn.org/stable/modules/grid_search.html).
-- If it's running slowly and you're using TfidfVectorizer, increase min_df to make the model smaller. This also helps to prevent overfitting, but can throw away some useful words so it's good to tune it.
-- [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) works with some sklearn models to easily see what words or ngrams are most important. [Here's an example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23), though you shouldn't need to set the feature names manually.
-- [Lime](https://github.com/marcotcr/lime) is a package I've used to understand why a model gives a particular output on a particular example. If I remember correctly, it can be used with neural networks and other models as well.
-</details>
-
 **Extra Credit:**
 - Package your model in a scikit-learn Pipeline for cleaner deployment
 - Experiment with hyperparameters:
@@ -170,6 +162,13 @@ See [OpenRouter rate limits documentation](https://openrouter.ai/docs/api/refere
 - **Stop words**: Extremely common words ("the", "a", "is") that are often removed because they add little meaning. May or may not help depending on your task.
 - **Ngram**: A sequence of N consecutive words (or characters). Bigrams (2-grams) like "very bad" can capture meaning that single words miss.
 - **Logistic regression**: A simple but effective classification algorithm that learns weights for features and outputs a probability. Despite its name, it's used for classification, not regression.
+- **Hyperparameter**: These are settings that affect the training of a model. When using logistic regression, the choice of `C` is an example that can have a major effect on the quality of the model. When using scikit-learn's TfidfVectorizer, there are many hyperparameters that affect quality including `min_df` and `ngram_range`.
+
+**Additional tips**
+- If you have many hyperparameters, consider code to help tune them. Scikit-learn provides [helpers like grid search or random search](https://scikit-learn.org/stable/modules/grid_search.html).
+- If it's running slowly and you're using TfidfVectorizer, increase min_df to make the model smaller. This also helps to prevent overfitting, but can throw away some useful words.
+- [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) works with many sklearn models to easily see what words or ngrams are most important. [Here's an example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23), though you shouldn't need to set the feature names manually.
+- [Lime](https://github.com/marcotcr/lime) is a package I've used to understand why a model gives a particular output on a particular example. If I remember correctly, it can be used with neural networks and other models as well.
 
 ### Level 4: Advanced Directions
 
