@@ -10,6 +10,7 @@ from data_loader import load_gametox, get_binary_labels, ToxicityLabel
 from regex_filter import regex
 from sklearn_filter import sklearn
 from llm_filter import llm
+from gemini_filter import gemini
 
 
 @click.group()
@@ -58,6 +59,11 @@ cli.add_command(sklearn)
 # LLM Filter Commands
 # ============================================================================
 cli.add_command(llm)
+
+# ============================================================================
+# Gemini Filter Commands (experimental — Level 3 provider comparison)
+# ============================================================================
+cli.add_command(gemini)
 
 
 if __name__ == "__main__":

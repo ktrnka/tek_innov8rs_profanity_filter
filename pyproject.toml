@@ -13,4 +13,5 @@ dependencies = [
     "openai>=2.8.1",
     "python-dotenv>=1.2.1",
     "pydantic>=2.12.4",
+    "google-genai>=2.8.0",
 ]

@@ -91,8 +91,23 @@ assumption — try it ourselves, measure, then decide.
 - **What to verify on the branch:** How hard is the SDK setup in code? Does it support **structured
   output** (huge for reliable parsing)? **Will it actually classify curse words, or refuse/filter the
   input?** (Content-safety refusals would be a dealbreaker for a profanity classifier.)
-- **Outcome:** decide the L3 default (lead with whichever is most generous *and* actually works on
-  profanity), keeping the other as the "compare multiple models" stretch.
+- **Findings (2026-06-11 — prototyped in `gemini_filter.py` + `gemini_smoke_test.py`):**
+  - **Setup:** easy — `google-genai` SDK, ~30 lines mirroring the OpenRouter class.
+  - **Structured output:** ✅ works via Pydantic `response_schema` → `response.parsed` (10/10 clean parses).
+  - **Refusals:** ❌ none — with the 4 text-harm categories at `BLOCK_NONE`, it classified slurs,
+    threats, `kys`, and `fucking <x>` without blocking. *Not* a dealbreaker. (Note: Gemini 2.5+
+    defaults to no probability blocking anyway, but we set `BLOCK_NONE` explicitly to be safe.)
+  - **Quality (toy set):** 10/10 including the Scunthorpe traps (`assessment`/`scunthorpe`/`class`)
+    that substring regex & sklearn get wrong — a nice teaching contrast for L3.
+  - **Latency:** ~0.54s/call on flash-lite.
+  - **Rate limits (the real catch — model-dependent):** `gemini-2.5-flash-lite` = **30 RPM /
+    1,500 req-day** (use this as default); `gemini-2.5-flash` = only **5 RPM** free (we hit a 429);
+    `gemini-2.0-flash` is **deprecated** (June 1, 2026 — don't use).
+- **Decision:** make **Gemini (`gemini-2.5-flash-lite`) the default L3 path** — 1,500/day vs
+  OpenRouter's 50/day, no credit card, no refusals, clean structured output. Keep **OpenRouter as the
+  optional "compare many models from one API" stretch.** The 30 RPM cap means batch evaluation still
+  needs throttling + caching, so the **sample-efficiency lesson stays** (Keith's instinct that Gemini
+  "helps a lot but doesn't fully solve" rate limits is confirmed).
 
 ### 4b. GameTox dataset replacement (currently blocking for new students)
 - **Why this is urgent:** `github.com/shucoll/GameTox` now ships **README-only** — the CSV is gated
