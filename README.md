@@ -51,6 +51,8 @@ Some levels call external APIs. **Secrets like API keys do not belong in your co
 ## Project Overview
 You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts (Jupyter notebooks are acceptable for exploration and analysis).
 
+The levels build up in sophistication: **rules → traditional ML → LLMs**. Levels 1 and 2 are the core of the project; Level 3 is a guided exploration of LLMs; Level 4 is optional stretch work. A big part of the learning is comparing these approaches — accuracy, speed, cost, and effort — so you understand when each is the right tool.
+
 ### Learning Objectives
 
 - **Solution spectrum**: Understand tradeoffs between rule-based systems, traditional ML, and LLMs. When does each approach excel?
@@ -88,20 +90,20 @@ When you present your work, walk through that table — what you tried, what you
 
 ### Level 1: Rule-Based Filter
 
-**Tasks:**
-1. Download datasets to `data/` directory:
-   - [GameTox dataset](https://github.com/shucoll/GameTox) - labeled gaming chat messages
-   - [Reddit Usernames dataset](https://www.kaggle.com/datasets/colinmorris/reddit-usernames) - real usernames for testing. Note that these are not labeled as offensive or not
+Build a profanity filter the simplest way possible: matching messages against a list of bad words. The point isn't to build a *great* filter — it's to feel firsthand where simple rules break down, and to get comfortable with the evaluation metrics you'll use for the rest of the project.
 
-2. Start simple - single word detection:
+**Tasks:**
+1. Get the data: you'll use the **GameTox** dataset (see [Getting Started](#2-get-the-data)). It has a `message` column and a `label` column (0 = non-toxic, 1–5 = different kinds of toxic). For now, treat it as binary: toxic (`label > 0`) vs. clean.
+
+2. Start simple — single-word detection:
    - Write a script that counts what percentage of GameTox messages contain "damn"
-   - Manually review some of those messages - are they all actually toxic?
+   - Manually review some of those messages — are they all actually toxic?
    - Count how many messages your script flags (all messages with "damn")
    - Count how many of those are actually labeled as toxic in GameTox (correct flags)
    - Count how many are labeled as not toxic (incorrect flags)
 
 3. Build a regex-based profanity detector:
-   - Start with a small list of profane words (5-10 words)
+   - Start with a small list of profane words (5–10 words)
    - Create a regular expression that matches any of those words
    - Test it and observe the same counts as above: total flagged, correct flags, incorrect flags
    - Expand your word list (download a profanity list or grow your hand-written one)
@@ -109,18 +111,19 @@ When you present your work, walk through that table — what you tried, what you
 
 4. Formal evaluation:
    - Calculate accuracy, precision, and recall on GameTox data
-   - Review flagged Reddit usernames to find false positives
-   - Try to bypass your own filter with creative misspellings - what gets through?
+   - Try to bypass your own filter with creative misspellings — what gets through?
 
 5. Baseline comparison:
    - Compare against [alt-profanity-check](https://github.com/dimitrismistriotis/alt-profanity-check)
 
-**Definition of Done:** When you observe the classic precision/recall tradeoff (blocking offensive content inevitably catches some innocent text) you're ready to move on.
+**Target:** About 81% of GameTox messages are *not* toxic, so a filter that flags nothing already scores ~81% accuracy — that's the bar to beat. With ~5 well-chosen rules you can reach **roughly 84% accuracy**. Notice how little accuracy moves even though your rules are catching real profanity — that's the imbalanced-data problem, and it's exactly why Level 2 introduces a better metric (F1).
+
+**Definition of Done:** When you can see the classic precision/recall tradeoff (blocking offensive content inevitably catches some innocent text) *and* you understand why accuracy alone is misleading on imbalanced data, you're ready to move on.
 
 **Key Learnings:**
 - Regular expressions
 - Working with real-world datasets (incomplete documentation, inherent biases)
-- Evaluation metrics (accuracy, precision) vs. traditional testing approaches
+- Evaluation metrics (accuracy, precision, recall) vs. traditional testing approaches
 
 **Terminology**
 - **Accuracy**: The percentage of predictions that are correct (both positive and negative). Can be misleading with imbalanced datasets.
@@ -128,79 +131,41 @@ When you present your work, walk through that table — what you tried, what you
 - **Recall**: Of all actual positive items, what percentage did we catch? High recall means we don't miss much.
 - **False positive**: An item incorrectly classified as positive (e.g., flagging "assessment" as profane).
 - **False negative**: An item incorrectly classified as negative (e.g., missing an actual profane message).
+- **"Positive" vs. "negative" (in classification)**: These have *nothing* to do with sentiment or good/bad. "Positive" means *the thing you're detecting* — here, a toxic/profane message — and "negative" means everything else (clean). So a "false positive" is a clean message wrongly flagged, and "recall" is the fraction of truly-toxic messages you caught.
 - **Regular expression**: A pattern-matching language for finding text sequences (e.g., `\b(bad|worse|worst)\b` matches those exact words).
 - **Binary classification**: A task with exactly two possible outcomes (e.g., profane vs. clean).
 
+**Check yourself**
+- *Done enough:* a regex filter you can run on GameTox, with reported accuracy/precision/recall and a concrete example of both a false positive and a false negative you found.
+- *Stretch:* grow and curate a larger word list, and find creative misspellings/obfuscations that slip past it (motivation for the later levels).
 
-### Level 2: LLM-Based Filter
+### Level 2: Traditional ML Classifier
 
-**Important: Rate Limits for Free Models**
-
-OpenRouter has strict rate limits for free models:
-- **50 requests per day** if you have less than $10 in credits
-- **1000 requests per day** if you purchase at least $10 in credits
-- **20 requests per minute** velocity limit
-
-**Recommended approach**: Start small with batches of 10 messages to stay well under the daily limit. Even with 50-100 messages, you can meaningfully compare LLM vs regex performance. Hard examples (messages where regex struggles) are especially valuable for demonstrating differences between approaches.
-
-See [OpenRouter rate limits documentation](https://openrouter.ai/docs/api/reference/limits) for details.
-
-**Tasks:**
-1. Implement an LLM-powered profanity detector:
-   - Use [OpenRouter](https://openrouter.ai/) for easy access to free models
-   - Design an effective prompt for binary classification
-   - **Start with small samples** (10 messages) due to rate limits
-
-2. Model comparison:
-   - Test multiple models (e.g., `openai/gpt-oss-20b:free`, `x-ai/grok-4.1-fast`, `meta-llama/llama-3.3-70b-instruct:free`)
-   - Compare accuracy, speed, and behavior across models
-
-3. Production feasibility:
-   - Calculate costs for processing 1M messages/day with a paid model (e.g., `openai/gpt-5.1`)
-   - Compare performance against your Level 1 solution
-
-**Extra Credit:**
-- Optimize prompts through systematic experimentation
-- Implement response caching to reduce average latency and cost
-- Use structured/JSON output mode for reliable parsing
-- Extend to multi-class classification (clean / profanity / insult / hate speech)
-
-**Key Learnings:**
-- LLM API integration and prompt engineering
-- Cost/latency tradeoffs in production ML systems
-- When LLMs are (and aren't) practical solutions
-
-**Terminology**
-- **Prompt engineering**: The process of designing and refining text instructions to get better results from LLMs. Small wording changes can significantly impact accuracy.
-- **Structured output**: Requesting LLMs to return responses in a specific format like JSON, making parsing more reliable than free-form text.
-- **Multi-class**: Classification with more than two categories (e.g., clean / profanity / insult / hate speech).
-- **Latency**: The time delay between sending a request and receiving a response. Critical for real-time applications like chat filtering.
-
-### Level 3: Traditional ML Classifier
+Instead of hand-writing rules, let a model *learn* what toxic language looks like from the labeled data. This is the workhorse of practical text classification: it runs locally on any hardware, there are excellent tutorials, and it's the best place in this project to get a real machine-learning result.
 
 **Tasks:**
 1. Train a scikit-learn text classifier:
-   - Split GameTox data into training and test sets
-   - Choose appropriate features. Start with TfidfVectorizer(ngram_range=(1, 1))
-   - Train a classifier. Start with LogisticRegression
+   - Split GameTox into training and test sets. Use a **stratified** split so both sets have a similar toxic ratio.
+   - Start with features from `TfidfVectorizer(ngram_range=(1, 1))`
+   - Start with a `LogisticRegression` classifier
+2. Evaluate properly:
+   - Measure accuracy, precision, recall, and **F1** on the held-out test set
+   - Compare against your Level 1 rule-based filter on the same data
+3. Beat the baseline:
+   - Once the default pipeline works, try to improve it — experiment with features and hyperparameters (see tips below), and **log each run's metrics** (see [Work like a researcher](#how-to-work-on-this-project))
 
-2. Comprehensive evaluation:
-   - Measure precision, recall, and F1-score on held-out test data
-   - Compare against Levels 1 and 2 across multiple dimensions:
-     - Accuracy and other metrics
-     - Latency (inference speed)
-     - Memory footprint
-     - External dependencies and costs
+**Target:** A copy-pasted default pipeline (`TfidfVectorizer` unigrams + `LogisticRegression`) lands around **0.90 accuracy and ~0.71 F1** on the toxic class. That default is your bar — aim to **match or beat it**. Watch F1, not just accuracy.
+
+> **Why F1 now?** Because the data is imbalanced (~19% toxic), accuracy can look high while the model misses most toxic messages (you saw this in Level 1). **F1** — the harmonic mean of precision and recall on the toxic class — is the honest single number to optimize here.
 
 **Helpful Resources:**
 - [scikit-learn text classification tutorial](https://scikit-learn.org/stable/auto_examples/text/plot_document_classification_20newsgroups.html)
 - [GeeksforGeeks NLP classification guide](https://www.geeksforgeeks.org/nlp/text-classification-using-scikit-learn-in-nlp/)
 
-**Extra Credit:**
-- Package your model in a scikit-learn Pipeline for cleaner deployment
-- Experiment with hyperparameters:
-    - TfidfVectorizer: analyzer=word vs char, ngram_range=(1, 2), min_df=1, 2, 3, and so on
-    - LogisticRegression: Try different C values
+**Tips for beating the baseline:**
+- `TfidfVectorizer`: try `ngram_range=(1, 2)`, different `min_df` values, or `analyzer='char'` vs `'word'`
+- `LogisticRegression`: try different `C` values
+- If it's running slowly, increase `min_df` to shrink the model — this also helps prevent overfitting (though it can throw away some useful words)
 
 **Key Learnings:**
 - Train/test methodology and avoiding overfitting
@@ -210,28 +175,81 @@ See [OpenRouter rate limits documentation](https://openrouter.ai/docs/api/refere
 **Terminology**
 - **Training vs testing data**: Training data is used to build the model; testing data evaluates how well it generalizes to unseen examples.
 - **Held-out data (same as testing data)**: Data deliberately set aside and not used during training, reserved exclusively for evaluation.
-- **F1-score, F-score, F-measure**: The harmonic mean of precision and recall, balancing both metrics. Commonly used instead of accuracy when the output is rare (most messages don't have profanity).
+- **F1-score, F-score, F-measure**: The harmonic mean of precision and recall, balancing both metrics. Commonly used instead of accuracy when the positive class is rare (most messages aren't toxic).
+- **Stratified split**: A train/test split that preserves the class proportions (e.g., keeps ~19% toxic in both sets), so evaluation isn't skewed by an unlucky split.
 - **Document frequency**: How many documents contain a particular word. Rare words (low DF) are often more informative than common ones.
-- **TF-IDF**: Term Frequency-Inverse Document Frequency; weights words by how often they appear in a document relative to how rare they are overall. Reduces impact of common words like "the".
+- **TF-IDF**: Term Frequency–Inverse Document Frequency; weights words by how often they appear in a document relative to how rare they are overall. Reduces the impact of common words like "the".
 - **Stop words**: Extremely common words ("the", "a", "is") that are often removed because they add little meaning. May or may not help depending on your task.
 - **Ngram**: A sequence of N consecutive words (or characters). Bigrams (2-grams) like "very bad" can capture meaning that single words miss.
 - **Logistic regression**: A simple but effective classification algorithm that learns weights for features and outputs a probability. Despite its name, it's used for classification, not regression.
-- **Hyperparameter**: These are settings that affect the training of a model. When using logistic regression, the choice of `C` is an example that can have a major effect on the quality of the model. When using scikit-learn's TfidfVectorizer, there are many hyperparameters that affect quality including `min_df` and `ngram_range`.
+- **Hyperparameter**: A setting that affects how a model is trained. For `LogisticRegression`, `C` is a key example; for `TfidfVectorizer`, `min_df` and `ngram_range` matter a lot.
 
-**Additional tips**
-- If you have many hyperparameters, consider code to help tune them. Scikit-learn provides [helpers like grid search or random search](https://scikit-learn.org/stable/modules/grid_search.html).
-- If it's running slowly and you're using TfidfVectorizer, increase min_df to make the model smaller. This also helps to prevent overfitting, but can throw away some useful words.
-- [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) works with many sklearn models to easily see what words or ngrams are most important. [Here's an example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23), though you shouldn't need to set the feature names manually.
-- [Lime](https://github.com/marcotcr/lime) is a package I've used to understand why a model gives a particular output on a particular example. If I remember correctly, it can be used with neural networks and other models as well.
+**Check yourself**
+- *Done enough:* a trained classifier evaluated on a held-out test set, with accuracy/precision/recall/F1 reported and compared to your Level 1 filter — and at least one experiment that tried to beat the default, logged in a results table.
+- *Stretch:* meaningfully beat the default F1 through systematic tuning (see Level 4 for going further with char n-grams, grid search, and interpretability).
 
-### Level 4: Advanced Directions
+### Level 3: LLM-Based Filter
 
-Choose one or more extensions based on your interests:
+Now try the heavy hitter: a large language model. The interesting question isn't "*can* an LLM do this?" (it can) — it's *when an LLM is actually the right tool*, given cost, latency, and rate limits. Treat this level as a guided exploration rather than a full build.
+
+**Use a generous free tier.** We recommend Google's Gemini via [Google AI Studio](https://aistudio.google.com/apikey): the free tier allows ~1,500 requests/day with no credit card, and the **`gemini-2.5-flash-lite`** model is fast and more than capable for binary classification. (Avoid `gemini-2.5-flash` on the free tier — it's throttled to ~5 requests/minute.)
+
+**Sample efficiency is the whole game.** You can't and shouldn't run an LLM over all ~43,000 messages — it's slow, and every free tier has limits. The skill here is getting a meaningful answer from a *small, well-chosen* sample:
+- Start with ~50–100 messages, not thousands.
+- Pick **hard examples** — messages where your Level 1 and Level 2 filters disagree, or that they get wrong. A handful of hard cases is more revealing than a random thousand.
+- Evaluate the LLM on the *same* messages you evaluate your other filters on, so the comparison is fair.
+
+**Tasks:**
+1. Implement an LLM-powered profanity detector:
+   - Call Gemini with a clear prompt for binary (profane/clean) classification
+   - Use **structured / JSON output** so responses are easy and reliable to parse
+   - Run it on a small, hard sample (see above)
+2. Compare to your earlier levels:
+   - On the same sample, how does the LLM's accuracy/precision/recall compare to your rule-based and ML filters?
+   - How does it do on the *hard* cases specifically (e.g., "nice assessment" — clean — vs. concatenated or obfuscated profanity)?
+3. Production feasibility:
+   - Estimate the cost and time to classify **1,000,000 messages/day** with a paid model. Is an LLM practical at that scale? Compare against your Level 2 classifier.
+
+**Key Learnings:**
+- Calling an LLM API and designing a prompt for classification
+- Sample-efficient evaluation — getting real signal from small, hard samples
+- Cost / latency / rate-limit tradeoffs, and when an LLM is (and isn't) practical
+
+**Terminology**
+- **Prompt engineering**: Designing and refining the text instructions you give an LLM. Small wording changes can noticeably change accuracy.
+- **Structured output**: Asking the LLM to respond in a fixed format (like JSON), making its answers reliable to parse instead of free-form text.
+- **Rate limit**: A cap on how many requests you can make per minute/day. Free tiers are limited; designing around this (small samples) is part of the job.
+- **Latency**: The delay between sending a request and getting a response. Critical for real-time chat filtering, and usually much higher for LLMs than for a local model.
+
+**Check yourself**
+- *Done enough:* a working LLM classifier evaluated on a small, deliberately-hard sample, compared head-to-head with Levels 1–2 on that same sample, plus a back-of-the-envelope cost estimate for 1M messages/day.
+- *Stretch:* compare several models from one API with [OpenRouter](https://openrouter.ai/) (note its free tier is much tighter — ~50 requests/day — so lean hard on small samples). Add response caching to make repeats cheap (see Level 4).
+
+### Level 4: Advanced Directions (optional)
+
+Optional stretch work — pick whatever interests you. None of this is required; it's where to go if you've finished the core levels and want more.
+
+**Go deeper on the ML classifier (Level 2):**
+- Package your model in a scikit-learn `Pipeline` for cleaner deployment
+- Systematically tune hyperparameters with [grid or random search](https://scikit-learn.org/stable/modules/grid_search.html)
+- Try **character n-grams** (`analyzer='char'`, `ngram_range=(1, 4)`) — they handle concatenated and obfuscated text (`fuckthatshit`, `sh1t`) far better than word features
+- Understand *why* the model predicts what it does with [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) ([example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23)) or [LIME](https://github.com/marcotcr/lime)
+- Export your model to ONNX for fast, dependency-light inference
+
+**Username filtering (a real product problem):**
+- Run your filters over the [Reddit Usernames dataset](https://www.kaggle.com/datasets/colinmorris/reddit-usernames) (unlabeled, real usernames). Review the flagged ones to estimate precision.
+- Usernames have no surrounding context and often concatenate words ("ihatethisgame"), so word-boundary tricks fail. Experiment with handling case transitions and substrings — and notice the false positives (e.g., a "cass" or "assessment" problem). Expected offensive rate in the wild: ~0.1–5%.
+
+**Make the LLM practical (Level 3):**
+- Add response **caching** (e.g., [diskcache](https://grantjenks.com/docs/diskcache/tutorial.html)) so duplicate/repeat messages don't re-hit the API — cutting average latency and cost
+- **Batch** many messages into one request to get more out of a daily quota
+- Run a small model **locally** with [Ollama](https://ollama.com/) — no API limits, but mind the hardware requirements
+- Extend to **multi-class** classification (clean / profanity / insult / hate speech)
 
 **ML/AI Approaches:**
 - Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset
 - Benchmark against pre-trained models like [toxic-bert](https://huggingface.co/unitary/toxic-bert)
-- Fine-tune an LLM to match GPT-4 performance at lower cost/latency
+- Fine-tune an LLM to match a frontier model's performance at lower cost/latency
 - Explore censoring (****ing) via token-level approaches (BERT) vs. generative approaches (T5)
 - Distinguish between profanity, hate speech, and harassment (should these be handled differently in the game?)
 
@@ -245,6 +263,7 @@ Choose one or more extensions based on your interests:
 - Build a web API for real-time filtering
 
 **Terminology**
+- **Multi-class**: Classification with more than two categories (e.g., clean / profanity / insult / hate speech), as opposed to binary.
 - **Fine-tuning**: Taking a pre-trained model and continuing to train it on your specific dataset. Leverages existing knowledge while specializing to your task.
 - **Transformer**: A neural network architecture using attention mechanisms to process sequences. The foundation for BERT, GPT, and most modern LLMs.
 - **Generative**: Models that produce new text rather than just classifying existing text. Can "rewrite" profane messages into clean versions rather than just detecting them.
