@@ -31,22 +31,12 @@ This project assumes you're comfortable with:
 
 ## Getting Started
 
-You'll build this project yourself, so the first step is setting up your own environment.
+You'll build this project yourself. To get going:
 
-### 1. Set up a Python project
-Create a project folder and pick a package manager to install dependencies and track them. We recommend [`uv`](https://docs.astral.sh/uv/) (fast and modern), but `pip` + a virtual environment or `poetry` are perfectly fine. Add libraries as each level needs them — e.g., `pandas` and `scikit-learn` for the data/ML work, and an LLM SDK for the LLM level.
+1. **Set up a Python project** with a package manager (we recommend [`uv`](https://docs.astral.sh/uv/); `pip` or `poetry` are fine). Add libraries as you need them — `pandas` and `scikit-learn` for the data/ML levels, an LLM SDK for the LLM level.
+2. **Get the GameTox dataset** (labeled gaming chat) from its [shared task](https://www.codabench.org/competitions/12083/), currently hosted in a public [Google Drive folder](https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu). Put `train.csv` (columns: `index, message, label`) somewhere sensible like `data/GameTox/`. Name dataset folders clearly and note where they came from — you'll likely add more later.
 
-> **Why a package manager?** It records the exact version of every library you install (and with tools like `uv`, even the Python version), so your project runs the same on your machine as on a teammate's — avoiding "works on my machine" problems. Get in the habit of committing your dependency files (e.g., `pyproject.toml` / lockfile) so your setup is reproducible.
-
-### 2. Get the data
-You'll need the GameTox dataset (labeled gaming chat). It's distributed via the [GameTox NAACL 2025 shared task](https://www.codabench.org/competitions/12083/) and currently hosted in a public Google Drive folder: <https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu>. Download `train.csv` (columns: `index, message, label`) into a `data/GameTox/` directory.
-
-> **Tip — organize and cite your data.** Give each dataset its own clearly-named folder under `data/` (e.g., `data/GameTox/`) and note where it came from. You'll likely add more datasets later, and future-you will thank you for tracking the source.
-
-### 3. API keys and `.env` (needed for the LLM level)
-Some levels call external APIs. **Secrets like API keys do not belong in your code** — put them in a `.env` file at your project root, and add `.env` to your `.gitignore` so you can't accidentally commit it. Load it at startup with a library like [`python-dotenv`](https://pypi.org/project/python-dotenv/).
-
-> **What's a `.env` file?** A plain text file of `KEY=value` lines (e.g., `GEMINI_API_KEY=...`) that your program reads at startup. It keeps secrets out of source code and out of version control. Never commit your `.env`.
+(API keys come later, in Level 3, when you first need one.)
 
 ## Project Overview
 You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts (Jupyter notebooks are acceptable for exploration and analysis).
@@ -59,41 +49,32 @@ The levels build up in sophistication: **rules → traditional ML → LLMs**. Le
 - **Text classification**: Gain hands-on experience with applied machine learning for NLP tasks
 - **LLM integration**: Learn to work with LLM APIs effectively
 - **Text processing**: Handle real-world challenges with Unicode, multilingual data, and noisy text
+- **Realistic, messy problems**: Work with real-world data that's far messier than a typical class assignment — incomplete labels, ambiguous cases, and rarely one clean "right answer".
+- **Evaluation, not just testing**: Learn to *measure* quality with metrics like precision and recall. This is a different mindset from unit testing, where code is simply right or wrong — here, every approach is partly wrong, and the question is *how* wrong and in which ways.
 
 ### How to Work on This Project
 
-This project deliberately uses real terminology and points you at real tools without defining every concept up front. Learning to find, understand, and apply unfamiliar ideas is part of the skill you're building here — so some struggle is expected and healthy. The guidance below is about making that struggle *productive*.
-
 **Researching what you don't know**
 
-When you hit a term, metric, or tool you don't recognize:
-- Start with the linked docs and resources in each level — they're chosen to get you moving.
-- Search the specific term *with* context (e.g., "tf-idf text classification", "precision vs recall imbalanced data") rather than the bare word.
-- Prefer a library's official documentation over random tutorials — it's usually faster and more correct.
-- Skim first, then go deep only where you need to. You don't have to fully master a concept before using it: use it, observe what happens, and circle back.
-- Stuck on *understanding* something (not debugging) for more than ~15–20 minutes? That's a good moment to ask for a pointer. The goal is productive struggle, not a brick wall.
-
-> Looking things up is a core engineering skill, not a sign you're behind — expect to do it constantly.
+This project intentionally names real terms and tools without defining all of them. Looking things up — starting with official docs — is part of the work, not a sign you're behind. Expect to do it constantly.
 
 **Work like a researcher (not "spray and pray")**
 
-Most levels ask you to compare approaches and tune them. Do that *systematically*, so your conclusions actually mean something and your write-up shows a clear trail instead of a pile of random attempts:
-- **Form a hypothesis** before each change — e.g., "adding word bigrams should improve recall on multi-word insults."
-- **Change one thing at a time.** If you change the features and the model at once, you won't know which one helped.
-- **Measure on the same held-out data**, with the same metric(s), every time — otherwise results aren't comparable.
-- **Log every run in a table**: what you changed and the resulting numbers (accuracy, precision, recall, F1). A small Markdown table or spreadsheet is plenty.
-- **Keep the failures.** "I tried X and it didn't help" is a real, useful result worth reporting.
+Most levels ask you to improve and compare approaches. The naive loop is to randomly change settings and keep whatever scores highest — don't do that. The real skill is forming a *hypothesis* about what will help, and a good hypothesis comes from **looking at your errors**:
 
-When you present your work, walk through that table — what you tried, what you expected, what actually happened, and what you concluded. That's far more convincing than demoing the one thing that happened to work.
+- **Inspect what your filter gets wrong.** Pull up the false positives and false negatives and actually read them. What do they have in common? Concatenated words? A misspelling? A word missing from your list? Sarcasm or context the model can't see?
+- **Turn the pattern into a hypothesis.** "Lots of my misses are multi-word insults → maybe word bigrams will help." Now you have a *reason* to make a specific change, not a random guess.
+- **Change one thing, then measure** on the same data with the same metric — so you can actually tell whether it helped.
+- **Log every run** — what you changed, *why*, and the resulting numbers — in a small table. Keep the failures: "I tried X because Y, and it didn't help" is a real result.
 
-> A good results log turns "I messed around with some models" into "here's what I learned, and why."
+When you present your work, walk through that trail: here's what I saw in the errors, here's what I tried and why, here's what happened. That's far more convincing — and more useful — than demoing the one thing that worked.
 
 ### Level 1: Rule-Based Filter
 
 Build a profanity filter the simplest way possible: matching messages against a list of bad words. The point isn't to build a *great* filter — it's to feel firsthand where simple rules break down, and to get comfortable with the evaluation metrics you'll use for the rest of the project.
 
 **Tasks:**
-1. Get the data: you'll use the **GameTox** dataset (see [Getting Started](#2-get-the-data)). It has a `message` column and a `label` column (0 = non-toxic, 1–5 = different kinds of toxic). For now, treat it as binary: toxic (`label > 0`) vs. clean.
+1. Get the data: you'll use the **GameTox** dataset (see [Getting Started](#getting-started)). It has a `message` column and a `label` column (0 = non-toxic, 1–5 = different kinds of toxic). For now, treat it as binary: toxic (`label > 0`) vs. clean.
 
 2. Start simple — single-word detection:
    - Write a script that counts what percentage of GameTox messages contain "damn"
@@ -194,43 +175,42 @@ Now try the heavy hitter: a large language model. The interesting question isn't
 
 **Use a generous free tier.** We recommend Google's Gemini via [Google AI Studio](https://aistudio.google.com/apikey): the free tier allows ~1,500 requests/day with no credit card, and the **`gemini-2.5-flash-lite`** model is fast and more than capable for binary classification. (Avoid `gemini-2.5-flash` on the free tier — it's throttled to ~5 requests/minute.)
 
-**Sample efficiency is the whole game.** You can't and shouldn't run an LLM over all ~43,000 messages — it's slow, and every free tier has limits. The skill here is getting a meaningful answer from a *small, well-chosen* sample:
-- Start with ~50–100 messages, not thousands.
-- Pick **hard examples** — messages where your Level 1 and Level 2 filters disagree, or that they get wrong. A handful of hard cases is more revealing than a random thousand.
-- Evaluate the LLM on the *same* messages you evaluate your other filters on, so the comparison is fair.
+**API keys and `.env`.** Get a free key from [Google AI Studio](https://aistudio.google.com/apikey). Secrets like API keys don't belong in your code — put it in a `.env` file at your project root, add `.env` to your `.gitignore`, and load it at startup with [`python-dotenv`](https://pypi.org/project/python-dotenv/). A `.env` is just a plain text file of `KEY=value` lines (e.g., `GEMINI_API_KEY=...`). Never commit it.
+
+**Work with a small, hand-picked set of messages.** You can't — and shouldn't — run an LLM over all ~43,000 messages: it's slow, and every free tier has limits. Instead, work with a *small* set (think ~30–50 messages), chosen on purpose:
+- **Pick hard examples** — messages where your Level 1 and Level 2 filters disagree, or that they get wrong. These are far more revealing than easy or random ones. Finding them usually means **writing a bit of code**: run both filters over the data and pull out the messages where they disagree.
+- Use the *same* messages to look at all three approaches (rules, ML, LLM) side by side.
+
+**Evaluate by reading, not by metrics.** This set is small and hand-picked, so precision/recall/F1 wouldn't be trustworthy here (a biased handful of messages can't give reliable numbers). Instead, evaluate *subjectively*: read each message alongside each filter's verdict and form your own judgment about who got it right, and why.
 
 **Tasks:**
-1. Implement an LLM-powered profanity detector:
-   - Call Gemini with a clear prompt for binary (profane/clean) classification
-   - Use **structured / JSON output** so responses are easy and reliable to parse
-   - Run it on a small, hard sample (see above)
-2. Compare to your earlier levels:
-   - On the same sample, how does the LLM's accuracy/precision/recall compare to your rule-based and ML filters?
-   - How does it do on the *hard* cases specifically (e.g., "nice assessment" — clean — vs. concatenated or obfuscated profanity)?
-3. Production feasibility:
-   - Estimate the cost and time to classify **1,000,000 messages/day** with a paid model. Is an LLM practical at that scale? Compare against your Level 2 classifier.
+1. Set up access: get a free Gemini API key (stored in `.env`, above). Call Gemini with a clear prompt for binary (profane/clean) classification, using **structured / JSON output** so responses are reliable to parse.
+2. Build your hard set: write code to find messages where your Level 1 and Level 2 filters *disagree*, and collect ~30–50 of them.
+3. Compare by hand: run all three filters (rules, ML, LLM) on that set and read through the results. Where does the LLM win? Where does it lose? What does it catch that your other filters miss (sarcasm, context, obfuscation), and where does it overreach?
+4. Production feasibility: estimate the cost and time to classify **1,000,000 messages/day** with a paid model. Is an LLM practical at that scale? Compare against your Level 2 classifier.
 
 **Key Learnings:**
 - Calling an LLM API and designing a prompt for classification
-- Sample-efficient evaluation — getting real signal from small, hard samples
+- Working within rate limits — getting real signal from a small, hand-picked set of hard cases
+- Judging quality *subjectively* when formal metrics don't apply
 - Cost / latency / rate-limit tradeoffs, and when an LLM is (and isn't) practical
 
 **Terminology**
 - **Prompt engineering**: Designing and refining the text instructions you give an LLM. Small wording changes can noticeably change accuracy.
 - **Structured output**: Asking the LLM to respond in a fixed format (like JSON), making its answers reliable to parse instead of free-form text.
-- **Rate limit**: A cap on how many requests you can make per minute/day. Free tiers are limited; designing around this (small samples) is part of the job.
+- **Rate limit**: A cap on how many requests you can make per minute or per day. Free tiers are limited, so designing around this (small sets of messages) is part of the job.
 - **Latency**: The delay between sending a request and getting a response. Critical for real-time chat filtering, and usually much higher for LLMs than for a local model.
 
 **Check yourself**
-- *Done enough:* a working LLM classifier evaluated on a small, deliberately-hard sample, compared head-to-head with Levels 1–2 on that same sample, plus a back-of-the-envelope cost estimate for 1M messages/day.
-- *Stretch:* compare several models from one API with [OpenRouter](https://openrouter.ai/) (note its free tier is much tighter — ~50 requests/day — so lean hard on small samples). Add response caching to make repeats cheap (see Level 4).
+- *Done enough:* a working LLM classifier run on a small, hand-picked set of hard messages, compared *by eye* against your Level 1–2 filters on that same set, plus a back-of-the-envelope cost estimate for 1M messages/day.
+- *Stretch:* compare several models from one API with [OpenRouter](https://openrouter.ai/) (its free tier is much tighter — ~50 requests/day). Add response caching to make repeats cheap (see Level 4).
 
 ### Level 4: Advanced Directions (optional)
 
 Optional stretch work — pick whatever interests you. None of this is required; it's where to go if you've finished the core levels and want more.
 
 **Go deeper on the ML classifier (Level 2):**
-- Package your model in a scikit-learn `Pipeline` for cleaner deployment
+- Package your model in a scikit-learn `Pipeline` for cleaner deployment. A real test of "packaging": can you send the *trained* model to a friend and have them run it on new text **without retraining it themselves**? That sounds trivial, but it's surprisingly hard — you have to ship the fitted vectorizer and model together and load them on the other end.
 - Systematically tune hyperparameters with [grid or random search](https://scikit-learn.org/stable/modules/grid_search.html)
 - Try **character n-grams** (`analyzer='char'`, `ngram_range=(1, 4)`) — they handle concatenated and obfuscated text (`fuckthatshit`, `sh1t`) far better than word features
 - Understand *why* the model predicts what it does with [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) ([example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23)) or [LIME](https://github.com/marcotcr/lime)
