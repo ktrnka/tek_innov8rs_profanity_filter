@@ -147,3 +147,16 @@ General population baseline: 0.1-5% of usernames are offensive
 - Worked: Loading Transformers.js from CDN.
 - Worked: Running an existing BERT model.
 - Failed: Running my model. It failed because it needed files like tokenizer.json, config.json. From some searches, it seems that Huggingface does not support tokenizers that are embedded within the ONNX file at all and there are no tools to convert
+
+# 2026 baselines (new GameTox train split)
+
+GameTox is now distributed via the Codabench shared task → Google Drive. The `train/` export's
+`train/train.csv` (`index,message,label`, 42,959 rows, 19.0% toxic in binary) replaces the old
+`data/GameTox/gametox.csv`. Baselines on this split (binary toxic vs. clean):
+
+| Method | Accuracy | Profane precision | Profane recall | Profane F1 |
+|--------|----------|-------------------|----------------|------------|
+| Regex (built-in 9-word list) | 0.821 | 0.824 | 0.076 | 0.139 |
+| sklearn default (TF-IDF unigrams + LogisticRegressionCV) | 0.905 | 0.843 | 0.614 | 0.711 |
+
+The sklearn default-pipeline row is the "beat this" bar for the redesigned Level 2.

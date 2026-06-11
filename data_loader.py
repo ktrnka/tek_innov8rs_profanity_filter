@@ -18,11 +18,15 @@ class ToxicityLabel(IntEnum):
     EXTREMISM = 5
 
 
-def load_gametox(data_path: str = "data/GameTox/gametox.csv") -> pd.DataFrame:
+def load_gametox(data_path: str = "data/train/train.csv") -> pd.DataFrame:
     """Load the GameTox dataset.
 
+    As of 2026, GameTox is distributed via the Codabench shared task (the GitHub repo is now
+    README-only). The shared-task export ships a `train/` folder; `train/train.csv` has the
+    `index,message,label` columns we use (the `index` column is ignored). See data/download.sh.
+
     Args:
-        data_path: Path to gametox.csv file
+        data_path: Path to the train CSV (columns: message, label; optional index)
 
     Returns:
         DataFrame with columns:
@@ -36,7 +40,7 @@ def load_gametox(data_path: str = "data/GameTox/gametox.csv") -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(
             f"GameTox dataset not found at {data_path}. "
-            "Run 'cd data && bash download.sh' to download it."
+            "See data/download.sh for how to obtain it (Codabench shared task export)."
         )
 
     df = pd.read_csv(path)

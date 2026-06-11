@@ -118,7 +118,14 @@ assumption — try it ourselves, measure, then decide.
   terms); (2) have students join the shared task; (3) switch the core to a freely-downloadable
   alternative (HuggingFace toxicity set or public gaming-chat data). Each has reproducibility vs.
   fidelity vs. effort tradeoffs — prototype before choosing.
-- **Until resolved:** the student-facing redesign assumes a working local `gametox.csv`.
+- **Progress (2026-06-11):** the data is now hosted on **Google Drive** (the shared task redirects
+  there). Keith downloaded the `train/` export; `train/train.csv` has `index,message,label` (same
+  6-label schema, 42,959 rows). **`data_loader.py` updated** to default to `data/train/train.csv` —
+  the `index` column is ignored and float labels convert cleanly; `stats`/`regex`/`sklearn` all run.
+- **Still open:** `data/download.sh` still does the now-broken `git clone`. How students *acquire*
+  the data needs a decision — automate the Google Drive folder pull (e.g., `gdown`, only if the
+  folder is publicly shared), have the instructor distribute the zip directly, or self-host. Tied to
+  the redistribution-terms question above.
 
 ---
 
@@ -221,6 +228,14 @@ dataset is in flux (§4b) and hardcoded thresholds would rot. Before finalizing 
    **accuracy + F1** → that baseline is the L2 "beat this" bar.
 
 Record both in `notes.md` so the numbers are reproducible and the rationale is preserved.
+
+**Initial reference points (2026-06-11, new GameTox train split — 42,959 rows, 19% toxic binary):**
+- *Regex, built-in 9-word list:* accuracy **0.821**, profane F1 0.139 (precision 0.824, recall
+  0.076). High precision, near-zero recall — a vivid "wordlists barely catch anything" baseline.
+  (The L1 bar should still come from *5 hand-tuned rules acting as smart agents*; this 9-word number
+  is just the current built-in reference.)
+- *sklearn default pipeline (TF-IDF unigrams + LogisticRegressionCV):* accuracy **0.905**, profane
+  F1 **0.711** (precision 0.843, recall 0.614), macro-F1 0.827. **This is the L2 "beat this" bar.**
 
 ---
 
