@@ -22,6 +22,32 @@ The production system had to handle:
 - **Visual feedback**: Star out flagged words in chat (e.g., `***essment`) so users can identify false positives
 - **Adversarial behavior**: Users actively attempt to bypass filters using leetspeak, misspellings, and Unicode characters
 
+## Prerequisites
+
+This project assumes you're comfortable with:
+- **Python** — reading and writing small scripts.
+- **The command line** — running commands and navigating directories.
+- **Package managers** — you don't need to be an expert, but you should understand what a package manager *is* and why a project uses one. If you've used `pip`, `poetry`, `conda`, or `npm`, you're set. If package managers are new to you, spend a few minutes reading about one (we recommend [`uv`](https://docs.astral.sh/uv/)) before starting.
+
+## Getting Started
+
+You'll build this project yourself, so the first step is setting up your own environment.
+
+### 1. Set up a Python project
+Create a project folder and pick a package manager to install dependencies and track them. We recommend [`uv`](https://docs.astral.sh/uv/) (fast and modern), but `pip` + a virtual environment or `poetry` are perfectly fine. Add libraries as each level needs them — e.g., `pandas` and `scikit-learn` for the data/ML work, and an LLM SDK for the LLM level.
+
+> **Why a package manager?** It records the exact version of every library you install (and with tools like `uv`, even the Python version), so your project runs the same on your machine as on a teammate's — avoiding "works on my machine" problems. Get in the habit of committing your dependency files (e.g., `pyproject.toml` / lockfile) so your setup is reproducible.
+
+### 2. Get the data
+You'll need the GameTox dataset (labeled gaming chat). It's distributed via the [GameTox NAACL 2025 shared task](https://www.codabench.org/competitions/12083/) and currently hosted in a public Google Drive folder: <https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu>. Download `train.csv` (columns: `index, message, label`) into a `data/GameTox/` directory.
+
+> **Tip — organize and cite your data.** Give each dataset its own clearly-named folder under `data/` (e.g., `data/GameTox/`) and note where it came from. You'll likely add more datasets later, and future-you will thank you for tracking the source.
+
+### 3. API keys and `.env` (needed for the LLM level)
+Some levels call external APIs. **Secrets like API keys do not belong in your code** — put them in a `.env` file at your project root, and add `.env` to your `.gitignore` so you can't accidentally commit it. Load it at startup with a library like [`python-dotenv`](https://pypi.org/project/python-dotenv/).
+
+> **What's a `.env` file?** A plain text file of `KEY=value` lines (e.g., `GEMINI_API_KEY=...`) that your program reads at startup. It keeps secrets out of source code and out of version control. Never commit your `.env`.
+
 ## Project Overview
 You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts (Jupyter notebooks are acceptable for exploration and analysis).
 
