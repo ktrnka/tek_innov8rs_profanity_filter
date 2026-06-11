@@ -122,10 +122,12 @@ assumption — try it ourselves, measure, then decide.
   there). Keith downloaded the `train/` export; `train/train.csv` has `index,message,label` (same
   6-label schema, 42,959 rows). **`data_loader.py` updated** to default to `data/train/train.csv` —
   the `index` column is ignored and float labels convert cleanly; `stats`/`regex`/`sklearn` all run.
-- **Still open:** `data/download.sh` still does the now-broken `git clone`. How students *acquire*
-  the data needs a decision — automate the Google Drive folder pull (e.g., `gdown`, only if the
-  folder is publicly shared), have the instructor distribute the zip directly, or self-host. Tied to
-  the redistribution-terms question above.
+- **RESOLVED (2026-06-11):** the Drive folder is public, so `data/download.sh` now pulls it with
+  `uvx gdown --folder ... -O GameTox` into `data/GameTox/` (restoring the `data/<DatasetName>/`
+  convention — good habit for when students add more datasets). The optional Reddit/Kaggle step is
+  now non-fatal (skips cleanly without `kaggle.json` instead of aborting under `set -e`). Tested:
+  clean download → 3 CSVs in `data/GameTox/`, `main.py stats` reads 42,959 rows, idempotent re-run.
+  Data stays gitignored. **GameTox is no longer a blocker.**
 
 ---
 
