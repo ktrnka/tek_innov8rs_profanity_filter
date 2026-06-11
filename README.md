@@ -22,6 +22,48 @@ The production system had to handle:
 - **Visual feedback**: Star out flagged words in chat (e.g., `***essment`) so users can identify false positives
 - **Adversarial behavior**: Users actively attempt to bypass filters using leetspeak, misspellings, and Unicode characters
 
+## Prerequisites
+
+This project assumes you're comfortable with:
+- **Python** — reading and writing small scripts.
+- **The command line** — running commands and navigating directories.
+- **Package managers** — you don't need to be an expert, but you should understand what a package manager *is* and why a project uses one. If you've used `pip`, `poetry`, `conda`, or `npm`, you're set. This project uses [`uv`](https://docs.astral.sh/uv/) (a fast Python package manager); if it's new to you, spend a few minutes with its docs before starting.
+
+## Getting Started
+
+### 1. Install `uv` and the dependencies
+We use [`uv`](https://docs.astral.sh/uv/) to manage the Python version and all dependencies. Install it (see its site), then from the project root run:
+
+```bash
+uv sync          # creates a virtual environment and installs everything
+```
+
+Run every project command through uv, for example:
+
+```bash
+uv run main.py stats
+```
+
+> **Why a package manager?** It pins the exact version of every library — and even the Python version — so the project behaves the same on your machine as on everyone else's, avoiding "works on my machine" problems. `uv` reads these from `pyproject.toml` and locks them in `uv.lock`.
+
+### 2. Download the data
+
+```bash
+cd data && bash download.sh
+```
+
+This downloads the GameTox dataset into `data/GameTox/`. (The Reddit usernames dataset is optional and only needed for Level 4.)
+
+### 3. Set up API keys (needed for the LLM level)
+Some levels call external APIs. **Secrets like API keys do not belong in your code** — they go in a `.env` file, which is git-ignored so you can't accidentally commit them. Copy the template and fill in your key(s):
+
+```bash
+cp .env.example .env
+# then edit .env and paste in your API key(s)
+```
+
+> **What's a `.env` file?** A plain text file of `KEY=value` lines that your program loads at startup (here via `python-dotenv`). It keeps secrets out of source code and out of version control. Never commit your `.env`.
+
 ## Project Overview
 You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts (Jupyter notebooks are acceptable for exploration and analysis).
 
