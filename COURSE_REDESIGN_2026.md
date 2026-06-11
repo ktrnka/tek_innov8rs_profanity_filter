@@ -122,12 +122,14 @@ assumption — try it ourselves, measure, then decide.
   there). Keith downloaded the `train/` export; `train/train.csv` has `index,message,label` (same
   6-label schema, 42,959 rows). **`data_loader.py` updated** to default to `data/train/train.csv` —
   the `index` column is ignored and float labels convert cleanly; `stats`/`regex`/`sklearn` all run.
-- **RESOLVED (2026-06-11):** the Drive folder is public, so `data/download.sh` now pulls it with
-  `uvx gdown --folder ... -O GameTox` into `data/GameTox/` (restoring the `data/<DatasetName>/`
-  convention — good habit for when students add more datasets). The optional Reddit/Kaggle step is
-  now non-fatal (skips cleanly without `kaggle.json` instead of aborting under `set -e`). Tested:
-  clean download → 3 CSVs in `data/GameTox/`, `main.py stats` reads 42,959 rows, idempotent re-run.
-  Data stays gitignored. **GameTox is no longer a blocker.**
+- **RESOLVED (2026-06-11):** the Drive folder is public, so `data/download.sh` pulls the three CSVs
+  directly with **`curl`** (by file ID) into `data/GameTox/` — deliberately *no* `gdown`/`uvx`, to
+  avoid an early hard tool dependency students may not have set up yet (curl is universal). Restores
+  the `data/<DatasetName>/` convention (good habit for when students add more datasets). Portable
+  shell (no bash-4 associative arrays, for macOS), with a header sanity-check. The optional
+  Reddit/Kaggle step is now non-fatal (skips cleanly without `kaggle.json` instead of aborting under
+  `set -e`). Tested: clean download → 3 CSVs in `data/GameTox/`, `main.py stats` reads 42,959 rows,
+  idempotent re-run. Data stays gitignored. **GameTox is no longer a blocker.**
 
 ---
 
