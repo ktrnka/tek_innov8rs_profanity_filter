@@ -9,6 +9,16 @@
 > (human or agent) make a sensible judgment call instead of following a broken recipe. If you find a
 > step that no longer makes sense, re-derive from the *intent* stated alongside it.
 
+**Implementation status (2026-06-11):**
+- ✅ Gemini prototyped + chosen for L3 (`gemini-2.5-flash-lite`); GameTox data acquisition fixed
+  (both on `kt_exploration`; see §4).
+- ✅ `main` README updated: Prerequisites + Getting Started (uv/`.env`), "How to Work on This
+  Project" guidelines, **level reorder** (sklearn→L2 core, LLM→L3 exploration, advanced→L4),
+  per-level targets + "Check yourself" rubrics, glossary positive/negative fix.
+- ⬜ Still to do: glossary deeper trim/polish pass if desired; finalize/record the L1 5-rule bar in
+  `notes.md`; (optional) complete the L3 `evaluate` reference on `kt_exploration`; resolve the
+  `docs/` updates (`questions_and_answers.md` still references OpenRouter-50/day framing).
+
 ---
 
 ## 1. Context
