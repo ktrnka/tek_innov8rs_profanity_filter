@@ -58,6 +58,34 @@ You'll build a simplified version of a production profanity filter, implementing
 - **LLM integration**: Learn to work with LLM APIs effectively
 - **Text processing**: Handle real-world challenges with Unicode, multilingual data, and noisy text
 
+### How to Work on This Project
+
+This project deliberately uses real terminology and points you at real tools without defining every concept up front. Learning to find, understand, and apply unfamiliar ideas is part of the skill you're building here — so some struggle is expected and healthy. The guidance below is about making that struggle *productive*.
+
+**Researching what you don't know**
+
+When you hit a term, metric, or tool you don't recognize:
+- Start with the linked docs and resources in each level — they're chosen to get you moving.
+- Search the specific term *with* context (e.g., "tf-idf text classification", "precision vs recall imbalanced data") rather than the bare word.
+- Prefer a library's official documentation over random tutorials — it's usually faster and more correct.
+- Skim first, then go deep only where you need to. You don't have to fully master a concept before using it: use it, observe what happens, and circle back.
+- Stuck on *understanding* something (not debugging) for more than ~15–20 minutes? That's a good moment to ask for a pointer. The goal is productive struggle, not a brick wall.
+
+> Looking things up is a core engineering skill, not a sign you're behind — expect to do it constantly.
+
+**Work like a researcher (not "spray and pray")**
+
+Most levels ask you to compare approaches and tune them. Do that *systematically*, so your conclusions actually mean something and your write-up shows a clear trail instead of a pile of random attempts:
+- **Form a hypothesis** before each change — e.g., "adding word bigrams should improve recall on multi-word insults."
+- **Change one thing at a time.** If you change the features and the model at once, you won't know which one helped.
+- **Measure on the same held-out data**, with the same metric(s), every time — otherwise results aren't comparable.
+- **Log every run in a table**: what you changed and the resulting numbers (accuracy, precision, recall, F1). A small Markdown table or spreadsheet is plenty.
+- **Keep the failures.** "I tried X and it didn't help" is a real, useful result worth reporting.
+
+When you present your work, walk through that table — what you tried, what you expected, what actually happened, and what you concluded. That's far more convincing than demoing the one thing that happened to work.
+
+> A good results log turns "I messed around with some models" into "here's what I learned, and why."
+
 ### Level 1: Rule-Based Filter
 
 **Tasks:**
