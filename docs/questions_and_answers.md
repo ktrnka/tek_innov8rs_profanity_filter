@@ -17,16 +17,18 @@
 
 ---
 
-## Fine-Tuning Memory Issues
+## Fine-Tuning Memory & Speed Issues
 
-**Problem:** ModernBERT fine-tuning runs out of memory and causes system thrashing.
+**Problem:** Fine-tuning a transformer (e.g., ModernBERT) runs out of memory and/or trains very slowly — especially on older or low-RAM machines.
 
-**Solutions:**
-1. **Start with small data subset** - Test with partial dataset before running overnight jobs
-2. **Reduce batch size** - Try batch_size=1 if needed just to get it working
-3. **Use smaller model** - DistilBERT (67M params) vs ModernBERT (149M params)
-   - [DistilBERT base uncased](https://huggingface.co/distilbert/distilbert-base-uncased)
-   - [Search for models <100M params](https://huggingface.co/models?pipeline_tag=text-classification&num_parameters=min:0,max:0.1B&sort=downloads)
+**Solutions (try in roughly this order):**
+1. **Iterate on a small data subset first** - Get the whole training script working and tune its speed on a few hundred examples before launching a full (possibly overnight) run. Don't debug on the full dataset.
+2. **Reduce the batch size** - Smaller batches use less memory; try `batch_size=8`, then `4`, then even `1` just to get it running. (Smaller batches can be slower per epoch, so balance against speed.)
+3. **Shorten the input length** - Transformer cost grows with sequence length, and chat messages are short — capping `max_length` (e.g., 64 or 128 tokens, with truncation) cuts memory use and speeds training a lot.
+4. **Use a smaller model** - A "tiny"/distilled model often gets most of the quality at a fraction of the cost:
+   - [TinyBERT](https://huggingface.co/huawei-noah/TinyBERT_General_4L_312D) and other distilled models
+   - [DistilBERT base uncased](https://huggingface.co/distilbert/distilbert-base-uncased) (~67M params) vs ModernBERT (~149M params)
+   - [Search for text-classification models <100M params](https://huggingface.co/models?pipeline_tag=text-classification&num_parameters=min:0,max:0.1B&sort=downloads)
 
 ---
 

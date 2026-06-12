@@ -34,9 +34,11 @@ This project assumes you're comfortable with:
 You'll build this project yourself. To get going:
 
 1. **Set up a Python project** with a package manager (we recommend [`uv`](https://docs.astral.sh/uv/); `pip` or `poetry` are fine). Add libraries as you need them — `pandas` and `scikit-learn` for the data/ML levels, an LLM SDK for the LLM level.
-2. **Get the GameTox dataset** (labeled gaming chat) from its [shared task](https://www.codabench.org/competitions/12083/), currently hosted in a public [Google Drive folder](https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu). Put `train.csv` (columns: `index, message, label`) somewhere sensible like `data/GameTox/`. Name dataset folders clearly and note where they came from — you'll likely add more later.
+2. **Get the GameTox dataset** (labeled gaming chat) from its [shared task](https://www.codabench.org/competitions/12083/), currently hosted in a public [Google Drive folder](https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu). **Download `train.csv` directly from that folder in your browser** (columns: `index, message, label`) and put it somewhere sensible like `data/GameTox/`. Name dataset folders clearly and note where they came from — you'll likely add more later.
 
 (API keys come later, in Level 3, when you first need one.)
+
+> **Platform note:** Shell commands in this project assume macOS, Linux, or [WSL](https://learn.microsoft.com/en-us/windows/wsl/) on Windows. On native Windows, adjust commands and file paths accordingly — many students find WSL the smoothest path.
 
 ## Project Overview
 You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts (Jupyter notebooks are acceptable for exploration and analysis).
@@ -227,7 +229,7 @@ Optional stretch work — pick whatever interests you. None of this is required;
 - Extend to **multi-class** classification (clean / profanity / insult / hate speech)
 
 **ML/AI Approaches:**
-- Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset
+- Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset. **Heads up:** fine-tuning is memory- and compute-hungry, and on modest or older hardware you'll likely hit out-of-memory errors or painfully slow training. Working through that is part of the exercise — but if you get truly stuck, the levers that help (a smaller/"tiny" model, smaller batch size, shorter input length, iterating on a data subset) are written up in [`docs/questions_and_answers.md`](docs/questions_and_answers.md).
 - Benchmark against pre-trained models like [toxic-bert](https://huggingface.co/unitary/toxic-bert)
 - Fine-tune an LLM to match a frontier model's performance at lower cost/latency
 - Explore censoring (****ing) via token-level approaches (BERT) vs. generative approaches (T5)
