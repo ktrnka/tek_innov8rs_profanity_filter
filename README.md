@@ -26,22 +26,19 @@ The production system had to handle:
 
 This project assumes you're comfortable with:
 - **Python** — reading and writing small scripts.
-- **The command line** — running commands and navigating directories.
-- **Package managers** — you don't need to be an expert, but you should understand what a package manager *is* and why a project uses one. If you've used `pip`, `poetry`, `conda`, or `npm`, you're set. If package managers are new to you, spend a few minutes reading about one (we recommend [`uv`](https://docs.astral.sh/uv/)) before starting.
+- **Package managers** — you don't need to be an expert, but you should understand what a package manager *is* and why a project uses one. If you've used `pip`, `poetry`, `conda`, or `npm`, you're set. If package managers are new to you, spend a few minutes reading about one (I recommend [`uv`](https://docs.astral.sh/uv/)) before starting.
 
 ## Getting Started
 
 You'll build this project yourself. To get going:
 
-1. **Set up a Python project** with a package manager (we recommend [`uv`](https://docs.astral.sh/uv/); `pip` or `poetry` are fine). Add libraries as you need them — `pandas` and `scikit-learn` for the data/ML levels, an LLM SDK for the LLM level.
-2. **Get the GameTox dataset** (labeled gaming chat) from its [shared task](https://www.codabench.org/competitions/12083/), currently hosted in a public [Google Drive folder](https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu). **Download `train.csv` directly from that folder in your browser** (columns: `index, message, label`) and put it somewhere sensible like `data/GameTox/`. Name dataset folders clearly and note where they came from — you'll likely add more later.
+1. **Set up a Python project** with a package manager. Add libraries as you need them — `pandas` and `scikit-learn` for the data/ML levels, an LLM SDK for the LLM level.
+2. **Get the GameTox dataset** (labeled gaming chat) from its [shared task](https://www.codabench.org/competitions/12083/), currently hosted in a public [Google Drive folder](https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu). **Download `train.csv` directly from that folder in your browser** (columns: `index, message, label`) and put it somewhere sensible like `data/GameTox/`. Name dataset folders clearly and note where they came from — you may add more later. It's also good to add a README.md into the folder with any notes like where they came from or what's in the data.
 
 (API keys come later, in Level 3, when you first need one.)
 
-> **Platform note:** Shell commands in this project assume macOS, Linux, or [WSL](https://learn.microsoft.com/en-us/windows/wsl/) on Windows. On native Windows, adjust commands and file paths accordingly — many students find WSL the smoothest path.
-
 ## Project Overview
-You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts (Jupyter notebooks are acceptable for exploration and analysis).
+You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts.
 
 The levels build up in sophistication: **rules → traditional ML → LLMs**. Levels 1 and 2 are the core of the project; Level 3 is a guided exploration of LLMs; Level 4 is optional stretch work. A big part of the learning is comparing these approaches — accuracy, speed, cost, and effort — so you understand when each is the right tool.
 
@@ -58,16 +55,16 @@ The levels build up in sophistication: **rules → traditional ML → LLMs**. Le
 
 **Researching what you don't know**
 
-This project intentionally names real terms and tools without defining all of them. Looking things up — starting with official docs — is part of the work, not a sign you're behind. Expect to do it constantly.
+This project uses real terms and tools without defining all of them. Looking things up — starting with official docs — is part of the work, not a sign you're behind.
 
-**Work like a researcher (not "spray and pray")**
+**Work like a researcher**
 
 Most levels ask you to improve and compare approaches. The naive loop is to randomly change settings and keep whatever scores highest — don't do that. The real skill is forming a *hypothesis* about what will help, and a good hypothesis comes from **looking at your errors**:
 
 - **Inspect what your filter gets wrong.** Pull up the false positives and false negatives and actually read them. What do they have in common? Concatenated words? A misspelling? A word missing from your list? Sarcasm or context the model can't see?
-- **Turn the pattern into a hypothesis.** "Lots of my misses are multi-word insults → maybe word bigrams will help." Now you have a *reason* to make a specific change, not a random guess.
+- **Turn the pattern into a hypothesis.** For example: "Lots of my misses are multi-word insults → maybe matching adjacent *pairs* of words will help." But you can only hypothesize about solutions you know exist — and early on, you mostly won't. That's why reading the documentation matters: skimming the scikit-learn `TfidfVectorizer` docs reveals the easy knobs you could turn (word vs. character n-grams, document-frequency cutoffs, stop words); reading up on LLM prompt engineering reveals techniques like chain-of-thought, few-shot / in-context learning, and structured outputs. Knowing the solution space is what turns a vague itch into a testable hypothesis.
 - **Change one thing, then measure** on the same data with the same metric — so you can actually tell whether it helped.
-- **Log every run** — what you changed, *why*, and the resulting numbers — in a small table. Keep the failures: "I tried X because Y, and it didn't help" is a real result.
+- **Log every run** — what you changed, *why*, and the resulting numbers — in a small table. Keep the failures, and describe them precisely: "I tried X because Y; it fixed some of the cases I was targeting but introduced new false positives on Z" is far more useful than "it didn't help." The *direction* of the tradeoff is the real result.
 
 When you present your work, walk through that trail: here's what I saw in the errors, here's what I tried and why, here's what happened. That's far more convincing — and more useful — than demoing the one thing that worked.
 
@@ -99,9 +96,24 @@ Build a profanity filter the simplest way possible: matching messages against a 
 5. Baseline comparison:
    - Compare against [alt-profanity-check](https://github.com/dimitrismistriotis/alt-profanity-check)
 
-**Target:** About 81% of GameTox messages are *not* toxic, so a filter that flags nothing already scores ~81% accuracy — that's the bar to beat. With ~5 well-chosen rules you can reach **roughly 84% accuracy**. Notice how little accuracy moves even though your rules are catching real profanity — that's the imbalanced-data problem, and it's exactly why Level 2 introduces a better metric (F1).
+**Definition of Done**
 
-**Definition of Done:** When you can see the classic precision/recall tradeoff (blocking offensive content inevitably catches some innocent text) *and* you understand why accuracy alone is misleading on imbalanced data, you're ready to move on.
+This level is less about a great filter than about what you walk away understanding. You're done when you can check off:
+
+*Evaluation results*
+- You report **accuracy, precision, and recall** on GameTox, with a concrete example of both a false positive (e.g., "assessment") and a false negative that you found by reading the data.
+- With ~5 well-chosen rules you reach **roughly 84% accuracy**. Notice the bar, though: ~81% of GameTox messages aren't toxic, so a filter that flags *nothing* already scores ~81% — barely below your rules, even though they're catching real profanity.
+
+*Engineering*
+- You have a regex-based filter you can run over GameTox and rerun as you expand your word list.
+- You've compared it against [alt-profanity-check](https://github.com/dimitrismistriotis/alt-profanity-check) on the same data.
+
+*What you should take away*
+- You've felt the classic **precision/recall tradeoff** firsthand: blocking more offensive content inevitably catches some innocent text.
+- You understand why **accuracy alone is misleading** on imbalanced data — that tiny accuracy gap above is the whole reason Level 2 switches to F1.
+
+*Stretch (optional)*
+- Grow and curate a larger word list, and hunt for creative misspellings/obfuscations that slip past it — motivation for the later levels.
 
 **Key Learnings:**
 - Regular expressions
@@ -110,17 +122,13 @@ Build a profanity filter the simplest way possible: matching messages against a 
 
 **Terminology**
 - **Accuracy**: The percentage of predictions that are correct (both positive and negative). Can be misleading with imbalanced datasets.
-- **Precision**: Of all items flagged as positive, what percentage are actually positive? High precision means few false alarms.
-- **Recall**: Of all actual positive items, what percentage did we catch? High recall means we don't miss much.
+- **"Positive" vs. "negative" (in classification)**: These have *nothing* to do with sentiment or good/bad. "Positive" means *the thing you're detecting* — here, a toxic/profane message — and "negative" means everything else (clean). So a "false positive" is a clean message wrongly flagged, and "recall" is the fraction of truly-toxic messages you caught.
 - **False positive**: An item incorrectly classified as positive (e.g., flagging "assessment" as profane).
 - **False negative**: An item incorrectly classified as negative (e.g., missing an actual profane message).
-- **"Positive" vs. "negative" (in classification)**: These have *nothing* to do with sentiment or good/bad. "Positive" means *the thing you're detecting* — here, a toxic/profane message — and "negative" means everything else (clean). So a "false positive" is a clean message wrongly flagged, and "recall" is the fraction of truly-toxic messages you caught.
+- **Precision**: Of all items flagged as positive, what percentage are actually positive? High precision means few false alarms.
+- **Recall**: Of all actual positive items, what percentage did we catch? High recall means we don't miss much.
 - **Regular expression**: A pattern-matching language for finding text sequences (e.g., `\b(bad|worse|worst)\b` matches those exact words).
 - **Binary classification**: A task with exactly two possible outcomes (e.g., profane vs. clean).
-
-**Check yourself**
-- *Done enough:* a regex filter you can run on GameTox, with reported accuracy/precision/recall and a concrete example of both a false positive and a false negative you found.
-- *Stretch:* grow and curate a larger word list, and find creative misspellings/obfuscations that slip past it (motivation for the later levels).
 
 ### Level 2: Traditional ML Classifier
 
@@ -128,7 +136,7 @@ Instead of hand-writing rules, let a model *learn* what toxic language looks lik
 
 **Tasks:**
 1. Train a scikit-learn text classifier:
-   - Split GameTox into training and test sets. Use a **stratified** split so both sets have a similar toxic ratio.
+   - Split the GameTox `train.csv` into your own training and test sets. (Yes — you're splitting the file that's *named* `train`. That's normal: you need a held-out slice the model never sees so you can measure how it does on unseen messages.) Use a **stratified** split so both sets have a similar toxic ratio.
    - Start with features from `TfidfVectorizer(ngram_range=(1, 1))`
    - Start with a `LogisticRegression` classifier
 2. Evaluate properly:
@@ -175,15 +183,17 @@ Instead of hand-writing rules, let a model *learn* what toxic language looks lik
 
 Now try the heavy hitter: a large language model. The interesting question isn't "*can* an LLM do this?" (it can) — it's *when an LLM is actually the right tool*, given cost, latency, and rate limits. Treat this level as a guided exploration rather than a full build.
 
-**Use a generous free tier.** We recommend Google's Gemini via [Google AI Studio](https://aistudio.google.com/apikey): the free tier allows ~1,500 requests/day with no credit card, and the **`gemini-2.5-flash-lite`** model is fast and more than capable for binary classification. (Avoid `gemini-2.5-flash` on the free tier — it's throttled to ~5 requests/minute.)
+**Use a generous free tier.** I recommend Google's Gemini via [Google AI Studio](https://aistudio.google.com/apikey): the free tier allows ~1,500 requests/day with no credit card, and the **`gemini-2.5-flash-lite`** model is fast and more than capable for binary classification. (Avoid `gemini-2.5-flash` on the free tier — it's throttled to ~5 requests/minute.)
 
-**API keys and `.env`.** Get a free key from [Google AI Studio](https://aistudio.google.com/apikey). Secrets like API keys don't belong in your code — put it in a `.env` file at your project root, add `.env` to your `.gitignore`, and load it at startup with [`python-dotenv`](https://pypi.org/project/python-dotenv/). A `.env` is just a plain text file of `KEY=value` lines (e.g., `GEMINI_API_KEY=...`). Never commit it.
+**API keys and `.env`.** Get a free key from [Google AI Studio](https://aistudio.google.com/apikey). Secrets like API keys don't belong in your code: a key hardcoded in a script is easy to commit by accident, and once it's in git history it stays there even after you "delete" it — and if you ever push to GitHub, bots actively scan public repos for leaked keys and will grab yours to burn through your quota or rack up charges on your account. Instead, put it in a `.env` file at your project root, add `.env` to your `.gitignore`, and load it at startup with [`python-dotenv`](https://pypi.org/project/python-dotenv/). A `.env` is just a plain text file of `KEY=value` lines (e.g., `GEMINI_API_KEY=...`). Never commit it.
 
-**Work with a small, hand-picked set of messages.** You can't — and shouldn't — run an LLM over all ~43,000 messages: it's slow, and every free tier has limits. Instead, work with a *small* set (think ~30–50 messages), chosen on purpose:
+**Work with a small, hand-picked set of messages.** On a free tier you can't run an LLM over all ~43,000 messages — it's slow and the daily quota is tight — so here you'll work with a *small* set (think ~30–50 messages), chosen on purpose:
 - **Pick hard examples** — messages where your Level 1 and Level 2 filters disagree, or that they get wrong. These are far more revealing than easy or random ones. Finding them usually means **writing a bit of code**: run both filters over the data and pull out the messages where they disagree.
 - Use the *same* messages to look at all three approaches (rules, ML, LLM) side by side.
 
-**Evaluate by reading, not by metrics.** This set is small and hand-picked, so precision/recall/F1 wouldn't be trustworthy here (a biased handful of messages can't give reliable numbers). Instead, evaluate *subjectively*: read each message alongside each filter's verdict and form your own judgment about who got it right, and why.
+> **How this differs from industry.** The tiny set is a *teaching* constraint from the free tier, not a best practice — don't take "~50 messages" as the professional norm. With a paid API you'd still *start* small and subjective (eyeball ~30–50 hard cases while iterating on the prompt), but once the prompt looks good you'd run a formal eval on ~1,000 messages, and only run the full ~43,000 for a final number you trust. The instinct is the same — start small, scale as your confidence grows — but in industry cost no longer forces you to stop at 50.
+
+**Evaluate by reading, not by metrics.** This set is small and hand-picked, so precision/recall/F1 wouldn't be trustworthy here (a biased handful of messages can't give reliable numbers). Instead, evaluate *subjectively*: read each message alongside each filter's verdict and form your own judgment about which approach got it right, and why.
 
 **Tasks:**
 1. Set up access: get a free Gemini API key (stored in `.env`, above). Call Gemini with a clear prompt for binary (profane/clean) classification, using **structured / JSON output** so responses are reliable to parse.
@@ -205,7 +215,6 @@ Now try the heavy hitter: a large language model. The interesting question isn't
 
 **Check yourself**
 - *Done enough:* a working LLM classifier run on a small, hand-picked set of hard messages, compared *by eye* against your Level 1–2 filters on that same set, plus a back-of-the-envelope cost estimate for 1M messages/day.
-- *Stretch:* compare several models from one API with [OpenRouter](https://openrouter.ai/) (its free tier is much tighter — ~50 requests/day). Add response caching to make repeats cheap (see Level 4).
 
 ### Level 4: Advanced Directions (optional)
 
@@ -214,7 +223,6 @@ Optional stretch work — pick whatever interests you. None of this is required;
 **Go deeper on the ML classifier (Level 2):**
 - Package your model in a scikit-learn `Pipeline` for cleaner deployment. A real test of "packaging": can you send the *trained* model to a friend and have them run it on new text **without retraining it themselves**? That sounds trivial, but it's surprisingly hard — you have to ship the fitted vectorizer and model together and load them on the other end.
 - Systematically tune hyperparameters with [grid or random search](https://scikit-learn.org/stable/modules/grid_search.html)
-- Try **character n-grams** (`analyzer='char'`, `ngram_range=(1, 4)`) — they handle concatenated and obfuscated text (`fuckthatshit`, `sh1t`) far better than word features
 - Understand *why* the model predicts what it does with [`eli5.show_weights`](https://eli5.readthedocs.io/en/latest/autodocs/eli5.html#eli5.show_weights) ([example](https://gist.github.com/jantrienes/13c53b841cdb98f3aaaf5f7147df7a23)) or [LIME](https://github.com/marcotcr/lime)
 - Export your model to ONNX for fast, dependency-light inference
 
@@ -225,15 +233,13 @@ Optional stretch work — pick whatever interests you. None of this is required;
 **Make the LLM practical (Level 3):**
 - Add response **caching** (e.g., [diskcache](https://grantjenks.com/docs/diskcache/tutorial.html)) so duplicate/repeat messages don't re-hit the API — cutting average latency and cost
 - **Batch** many messages into one request to get more out of a daily quota
-- Run a small model **locally** with [Ollama](https://ollama.com/) — no API limits, but mind the hardware requirements
+- Run a small model **locally** with [Ollama](https://ollama.com/) — no API limits. Start with a small model
 - Extend to **multi-class** classification (clean / profanity / insult / hate speech)
 
 **ML/AI Approaches:**
 - Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset. **Heads up:** fine-tuning is memory- and compute-hungry, and on modest or older hardware you'll likely hit out-of-memory errors or painfully slow training. Working through that is part of the exercise — but if you get truly stuck, the levers that help (a smaller/"tiny" model, smaller batch size, shorter input length, iterating on a data subset) are written up in [`docs/questions_and_answers.md`](docs/questions_and_answers.md).
 - Benchmark against pre-trained models like [toxic-bert](https://huggingface.co/unitary/toxic-bert)
-- Fine-tune an LLM to match a frontier model's performance at lower cost/latency
 - Explore censoring (****ing) via token-level approaches (BERT) vs. generative approaches (T5)
-- Distinguish between profanity, hate speech, and harassment (should these be handled differently in the game?)
 
 **Expanded Support:**
 - Extend to non-English languages using multilingual BERT or LLMs
