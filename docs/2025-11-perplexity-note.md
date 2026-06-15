@@ -1,3 +1,9 @@
+# Problem Space & Dataset/Library Survey
+
+> Optional reading. Background research compiled November 2025 (via Perplexity) — a landscape of the
+> problem, alternative labeled datasets, and existing Python profanity libraries. Useful if you want
+> more datasets to evaluate on (Level 4) or context on the broader problem. Links and library
+> details were accurate as of late 2025; verify before relying on any specific one.
 
 ## Problem Space Analysis
 

@@ -22,6 +22,40 @@ The production system had to handle:
 - **Visual feedback**: Star out flagged words in chat (e.g., `***essment`) so users can identify false positives
 - **Adversarial behavior**: Users actively attempt to bypass filters using leetspeak, misspellings, and Unicode characters
 
+## What's changed (June 2026)
+
+If you took this course in the previous run, here's what's different — and why:
+
+- **The levels were reordered.** Traditional ML (scikit-learn) is now **Level 2** and LLMs moved to
+  **Level 3**. Levels 1–2 are the core; Level 3 is a guided exploration; Level 4 is optional
+  stretch. *Why:* last run, students who reached the LLM level often got stuck there — partly on
+  external friction (API keys and rate limits), and partly because **good subjective evaluation of
+  an LLM is hard without first having a foundation in objective evaluation**. The sklearn level
+  turned out to be a smoother experience for those same reasons, and because there are so many good
+  online guides for it. So it now comes first, where you build the evaluation intuition you'll lean
+  on when you get to the LLM.
+- **Level 2 (sklearn) is leaner; the deeper ML work moved to Level 4.** Advanced exploration —
+  character n-grams, hyperparameter search, model interpretability, ONNX export — is now optional
+  Level 4 stretch rather than part of the core. *Why:* keeping the core tight means more students
+  actually make it all the way through Levels 1–3, instead of stalling partway. The depth is still
+  there for anyone who wants it; it just no longer gates the core path.
+- **The LLM level now uses Google Gemini** instead of OpenRouter. *Why:* OpenRouter's free tier
+  (50 requests/day) was a real, concrete blocker last run — students simply ran out of requests
+  before they could finish their work. Gemini's free tier (~1,500 requests/day, no credit card)
+  removes that wall.
+- **The dataset is downloaded differently.** GameTox is now distributed via its
+  [Codabench shared task](https://www.codabench.org/competitions/12083/) / Google Drive (the old
+  GitHub repo is README-only now). See [Getting Started](#getting-started).
+- **New onboarding and guidance.** Added Prerequisites, a Getting Started section (package manager,
+  dataset, `.env` files), and two how-to-learn guides — "Researching what you don't know" and "Work
+  like a researcher" — plus a "Definition of Done" / "Check yourself" rubric on each level. *Why:*
+  to cut down the time spent struggling on incidental, non-essential plumbing (toolchain, setup,
+  finding your footing) so that more of your time and attention goes to the lessons that actually
+  matter.
+- **How this revision was made.** I used Claude Opus to help edit these docs and expand the
+  reference code on the private branch — a way to balance making meaningful improvements against my
+  limited schedule. I reviewed and directed the changes; flagging the provenance for transparency.
+
 ## Prerequisites
 
 This project assumes you're comfortable with:
@@ -102,7 +136,7 @@ This level is less about a great filter than about what you walk away understand
 
 *Evaluation results*
 - You report **accuracy, precision, and recall** on GameTox, with a concrete example of both a false positive (e.g., "assessment") and a false negative that you found by reading the data.
-- With ~5 well-chosen rules you reach **roughly 84% accuracy**. Notice the bar, though: ~81% of GameTox messages aren't toxic, so a filter that flags *nothing* already scores ~81% — barely below your rules, even though they're catching real profanity.
+- With ~5 well-chosen rules you reach **accuracy in the low-to-mid 80s%**. Notice the bar, though: ~81% of GameTox messages aren't toxic, so a filter that flags *nothing* already scores ~81% — barely below your rules, even though they're catching real profanity.
 
 *Engineering*
 - You have a regex-based filter you can run over GameTox and rerun as you expand your word list.
@@ -142,10 +176,11 @@ Instead of hand-writing rules, let a model *learn* what toxic language looks lik
 2. Evaluate properly:
    - Measure accuracy, precision, recall, and **F1** on the held-out test set
    - Compare against your Level 1 rule-based filter on the same data
-3. Beat the baseline:
-   - Once the default pipeline works, try to improve it — experiment with features and hyperparameters (see tips below), and **log each run's metrics** (see [Work like a researcher](#how-to-work-on-this-project))
+3. Establish a baseline, then improve on it:
+   - First, run the pipeline with **default settings** (`TfidfVectorizer(ngram_range=(1, 1))` + a plain `LogisticRegression`) and evaluate it. That result is *your* baseline — the number to beat.
+   - Then try to improve on it — experiment with features and hyperparameters (see tips below), changing **one thing at a time**, and **log each run's metrics** (see [Work like a researcher](#how-to-work-on-this-project)).
 
-**Target:** A copy-pasted default pipeline (`TfidfVectorizer` unigrams + `LogisticRegression`) lands around **0.90 accuracy and ~0.71 F1** on the toxic class. That default is your bar — aim to **match or beat it**. Watch F1, not just accuracy.
+**What to expect:** the untuned default already reaches roughly **0.9 accuracy** — but on imbalanced data (~19% toxic) accuracy flatters you, so the number that actually matters is **F1 on the toxic class**, which starts well below the accuracy. Don't chase a fixed target you copied from someone else; measure your own default, then beat it — and watch F1, not accuracy, as you tune.
 
 > **Why F1 now?** Because the data is imbalanced (~19% toxic), accuracy can look high while the model misses most toxic messages (you saw this in Level 1). **F1** — the harmonic mean of precision and recall on the toxic class — is the honest single number to optimize here.
 
@@ -196,7 +231,7 @@ Now try the heavy hitter: a large language model. The interesting question isn't
 **Evaluate by reading, not by metrics.** This set is small and hand-picked, so precision/recall/F1 wouldn't be trustworthy here (a biased handful of messages can't give reliable numbers). Instead, evaluate *subjectively*: read each message alongside each filter's verdict and form your own judgment about which approach got it right, and why.
 
 **Tasks:**
-1. Set up access: get a free Gemini API key (stored in `.env`, above). Call Gemini with a clear prompt for binary (profane/clean) classification, using **structured / JSON output** so responses are reliable to parse.
+1. Set up access: install the official [`google-genai`](https://ai.google.dev/gemini-api/docs/quickstart) SDK and get a free Gemini API key (stored in `.env`, above). Call Gemini with a clear prompt for binary (profane/clean) classification, using [**structured / JSON output**](https://ai.google.dev/gemini-api/docs/structured-output) so responses are reliable to parse.
 2. Build your hard set: write code to find messages where your Level 1 and Level 2 filters *disagree*, and collect ~30–50 of them.
 3. Compare by hand: run all three filters (rules, ML, LLM) on that set and read through the results. Where does the LLM win? Where does it lose? What does it catch that your other filters miss (sarcasm, context, obfuscation), and where does it overreach?
 4. Production feasibility: estimate the cost and time to classify **1,000,000 messages/day** with a paid model. Is an LLM practical at that scale? Compare against your Level 2 classifier.
@@ -237,14 +272,14 @@ Optional stretch work — pick whatever interests you. None of this is required;
 - Extend to **multi-class** classification (clean / profanity / insult / hate speech)
 
 **ML/AI Approaches:**
-- Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset. **Heads up:** fine-tuning is memory- and compute-hungry, and on modest or older hardware you'll likely hit out-of-memory errors or painfully slow training. Working through that is part of the exercise — but if you get truly stuck, the levers that help (a smaller/"tiny" model, smaller batch size, shorter input length, iterating on a data subset) are written up in [`docs/questions_and_answers.md`](docs/questions_and_answers.md).
+- Fine-tune a transformer model like [ModernBERT](https://huggingface.co/blog/modernbert) on your dataset. **Heads up:** fine-tuning is memory- and compute-hungry, and on modest or older hardware you'll likely hit out-of-memory errors or painfully slow training. Working through that is part of the exercise — but if you get truly stuck, the levers that help (a smaller/"tiny" model, smaller batch size, shorter input length, iterating on a data subset) are written up in [`docs/2025-12-questions-and-answers.md`](docs/2025-12-questions-and-answers.md).
 - Benchmark against pre-trained models like [toxic-bert](https://huggingface.co/unitary/toxic-bert)
 - Explore censoring (****ing) via token-level approaches (BERT) vs. generative approaches (T5)
 
 **Expanded Support:**
 - Extend to non-English languages using multilingual BERT or LLMs
 - **Important**: Validate data quality carefully for languages you don't speak
-- Evaluate on additional datasets (see `docs/Perplexity_note.md` for options)
+- Evaluate on additional datasets (see `docs/2025-11-perplexity-note.md` for options)
 
 **Deployment & Engineering:**
 - Package your solution as an installable Python library

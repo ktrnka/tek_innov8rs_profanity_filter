@@ -1,5 +1,11 @@
 # Q&A Reference
 
+> Optional reading. Written December 2025; last updated June 2026. Answers to questions that came up
+> in the first run — LLM rate limits, fine-tuning memory/speed, and multilingual filtering.
+> Note: the rate-limit section below is written around OpenRouter (the previous provider); the
+> course now recommends Gemini, but the underlying advice — small samples, caching, picking hard
+> examples — applies to any provider.
+
 ---
 
 ## LLM Rate Limits (OpenRouter Free Tier)

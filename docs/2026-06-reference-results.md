@@ -1,8 +1,15 @@
-# Username Filtering Evaluation Results
+# Reference Results & Lessons Learned
 
-## Comparison of Filtering Methods
+> Optional reading. This is the instructor's running log from building reference solutions — kept
+> as a worked example of the "log every run in a table" habit the README asks of you, and as a
+> sanity-check on the kinds of numbers each approach produces. Most of the username/JS material is
+> from the first (fall 2025) run; the baseline and LLM-provider sections were refreshed for the
+> June 2026 re-run. It is not an answer key — your own dataset split and rules will differ.
 
-Evaluated on 100,000 Reddit usernames (unlabeled data).
+## Username Filtering — Comparison of Methods (Level 4 stretch)
+
+Evaluated on 100,000 Reddit usernames (unlabeled data). Username filtering is now optional Level 4
+work; these numbers are from the first run.
 
 ### REGEX METHODS
 
@@ -160,3 +167,25 @@ GameTox is now distributed via the Codabench shared task → Google Drive. The `
 | sklearn default (TF-IDF unigrams + LogisticRegressionCV) | 0.905 | 0.843 | 0.614 | 0.711 |
 
 The sklearn default-pipeline row is the "beat this" bar for the redesigned Level 2.
+
+# 2026 LLM provider findings (Level 3)
+
+For the LLM level we switched the recommended provider from OpenRouter (50 requests/day free) to
+Google's Gemini via AI Studio (~1,500 requests/day free, no credit card). What we found prototyping
+`gemini-2.5-flash-lite` on a small toy set:
+
+- **Structured output works.** Asking for JSON against a fixed schema gave clean, parseable
+  labels every time — no brittle string-parsing of free-form replies.
+- **No safety refusals.** A profanity classifier feeds the model exactly the toxic text it's meant
+  to judge. With the adjustable safety categories turned off, Gemini classified slurs, threats, and
+  `kys`-style messages without blocking — a refusal here would have been a dealbreaker.
+- **It nails the Scunthorpe traps.** Cases that fool substring regex and even the sklearn model
+  (`assessment`, `scunthorpe`, `class`) were handled correctly — a nice illustration of where an
+  LLM's context understanding pays off.
+- **Latency is the catch:** ~0.5s per call, and `gemini-2.5-flash-lite` is capped at 30
+  requests/minute. That's why Level 3 has you evaluate a *small, hand-picked* set rather than
+  brute-forcing all ~43,000 messages — the rate limit is itself the lesson about when an LLM is
+  practical at scale.
+
+Model notes: prefer `gemini-2.5-flash-lite` (30 RPM / 1,500 per day). `gemini-2.5-flash` is only
+~5 RPM on the free tier, and `gemini-2.0-flash` was deprecated in June 2026.
