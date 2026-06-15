@@ -94,7 +94,7 @@ This project uses real terms and tools without defining all of them. Looking thi
 Most levels ask you to improve and compare approaches. The naive loop is to randomly change settings and keep whatever scores highest — don't do that. The real skill is forming a *hypothesis* about what will help, and a good hypothesis comes from **looking at your errors**:
 
 - **Inspect what your filter gets wrong.** Pull up the false positives and false negatives and actually read them. What do they have in common? Concatenated words? A misspelling? A word missing from your list? Sarcasm or context the model can't see?
-- **Turn the pattern into a hypothesis.** For example: "Lots of my misses are multi-word insults → maybe matching adjacent *pairs* of words will help." But you can only hypothesize about solutions you know exist — and early on, you mostly won't. That's why reading the documentation matters: skimming the scikit-learn `TfidfVectorizer` docs reveals the easy knobs you could turn (word vs. character n-grams, document-frequency cutoffs, stop words); reading up on LLM prompt engineering reveals techniques like chain-of-thought, few-shot / in-context learning, and structured outputs. Knowing the solution space is what turns a vague itch into a testable hypothesis.
+- **Turn the pattern into a hypothesis.** For example: "Lots of my misses are multi-word insults → maybe matching adjacent *pairs* of words will help." But you can only hypothesize about solutions you know exist. That's why reading the documentation matters: skimming the scikit-learn `TfidfVectorizer` docs reveals the easy knobs you could turn (word vs. character n-grams, document-frequency cutoffs, stop words); reading up on LLM prompt engineering reveals techniques like chain-of-thought, few-shot / in-context learning, and structured outputs. Knowing the solution space is what turns a vague itch into a testable hypothesis.
 - **Change one thing, then measure** on the same data with the same metric — so you can actually tell whether it helped.
 - **Log every run** — what you changed, *why*, and the resulting numbers — in a small table. Keep the failures, and describe them precisely: "I tried X because Y; it fixed some of the cases I was targeting but introduced new false positives on Z" is far more useful than "it didn't help." The *direction* of the tradeoff is the real result.
 
@@ -154,7 +154,7 @@ This level is less about a great filter than about what you walk away understand
 
 **Terminology**
 - **Accuracy**: The percentage of predictions that are correct (both positive and negative). Can be misleading with imbalanced datasets.
-- **"Positive" vs. "negative" (in classification)**: These have *nothing* to do with sentiment or good/bad. "Positive" means *the thing you're detecting* — here, a toxic/profane message — and "negative" means everything else (clean). So a "false positive" is a clean message wrongly flagged, and "recall" is the fraction of truly-toxic messages you caught.
+- **"Positive" vs. "negative" (in classification)**: These have *nothing* to do with sentiment or good/bad. "Positive" means *the thing you're detecting* — here, a toxic/profane message — and "negative" means everything else (clean).
 - **False positive**: An item incorrectly classified as positive (e.g., flagging "assessment" as profane).
 - **False negative**: An item incorrectly classified as negative (e.g., missing an actual profane message).
 - **Precision**: Of all items flagged as positive, what percentage are actually positive? High precision means few false alarms.
