@@ -69,8 +69,6 @@ You'll build this project yourself. To get going:
 1. **Set up a Python project** with a package manager. Add libraries as you need them — `pandas` and `scikit-learn` for the data/ML levels, an LLM SDK for the LLM level.
 2. **Get the GameTox dataset** (labeled gaming chat) from its [shared task](https://www.codabench.org/competitions/12083/), currently hosted in a public [Google Drive folder](https://drive.google.com/drive/folders/1HkfwexOpX1S9gRrMeCFMfZJjsBs0hQRu). **Download `train.csv` directly from that folder in your browser** (columns: `index, message, label`) and put it somewhere sensible like `data/GameTox/`. Name dataset folders clearly and note where they came from — you may add more later. It's also good to add a README.md into the folder with any notes like where they came from or what's in the data.
 
-(API keys come later, in Level 3, when you first need one.)
-
 ## Project Overview
 You'll build a simplified version of a production profanity filter, implementing progressively more sophisticated approaches. All code should be written in Python, primarily as CLI scripts.
 
