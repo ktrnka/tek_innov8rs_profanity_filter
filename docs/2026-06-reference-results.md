@@ -164,9 +164,26 @@ GameTox is now distributed via the Codabench shared task → Google Drive. The `
 | Method | Accuracy | Profane precision | Profane recall | Profane F1 |
 |--------|----------|-------------------|----------------|------------|
 | Regex (built-in 9-word list) | 0.821 | 0.824 | 0.076 | 0.139 |
-| sklearn default (TF-IDF unigrams + LogisticRegressionCV) | 0.905 | 0.843 | 0.614 | 0.711 |
+| Regex (5 smart rules, word-boundary) | 0.848 | 0.888 | 0.229 | 0.364 |
+| Regex (5 smart rules, substring stems) | 0.865 | 0.876 | 0.339 | 0.489 |
+| sklearn plain default (`TfidfVectorizer()` + `LogisticRegression()`) | 0.898 | 0.872 | 0.542 | 0.669 |
+| sklearn tuned (TF-IDF unigrams, min_df=3/max_df=0.2 + LogisticRegressionCV) | 0.905 | 0.843 | 0.614 | 0.711 |
 
-The sklearn default-pipeline row is the "beat this" bar for the redesigned Level 2.
+Notes on each row (measured 2026-06-14 on the 42,959-row train split; whole-dataset for regex, 80/20
+stratified test split for sklearn):
+
+- **5 smart rules (L1 bar).** Acting as a "smart agent," greedily picking the 5 word-rules that most
+  improve accuracy lands on `idiot, bot, idiots, fuck, wtf` → **0.848**. Switching to substring
+  *stems* (`idiot, fuck, noob, bot, wtf`, so `idiot` also catches `idiots/idiotic`) reaches
+  **0.865**. So the L1 "5 well-chosen rules" bar is **mid-80s% accuracy (~0.85–0.87)**. Teaching
+  signal: the winning rules are *insults/spam* (`idiot`, `bot`, `wtf`, `noob`), not classic curses —
+  a student who starts from a swear-word list gets high precision but tiny recall (see the 9-word
+  row, R=0.076).
+- **sklearn plain default vs. tuned (L2 bar).** The genuinely copy-paste default
+  (`TfidfVectorizer()` + `LogisticRegression()`, all defaults) is **0.898 acc / 0.669 F1** — this is
+  the honest "beat your own default" bar students start from. The previously-recorded **0.905 /
+  0.711** row used `LogisticRegressionCV` (which tunes regularization) plus `min_df`/`max_df`, so it
+  was already an *improved* pipeline, not the default — don't quote it as the starting baseline.
 
 # 2026 LLM provider findings (Level 3)
 

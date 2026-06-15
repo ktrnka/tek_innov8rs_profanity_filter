@@ -136,7 +136,7 @@ This level is less about a great filter than about what you walk away understand
 
 *Evaluation results*
 - You report **accuracy, precision, and recall** on GameTox, with a concrete example of both a false positive (e.g., "assessment") and a false negative that you found by reading the data.
-- With ~5 well-chosen rules you reach **accuracy in the low-to-mid 80s%**. Notice the bar, though: ~81% of GameTox messages aren't toxic, so a filter that flags *nothing* already scores ~81% — barely below your rules, even though they're catching real profanity.
+- With ~5 well-chosen rules you reach **accuracy in the mid-80s% (around 85%)**. Notice the bar, though: ~81% of GameTox messages aren't toxic, so a filter that flags *nothing* already scores ~81% — only a few points below your rules, even though they're catching real profanity.
 
 *Engineering*
 - You have a regex-based filter you can run over GameTox and rerun as you expand your word list.
@@ -180,7 +180,7 @@ Instead of hand-writing rules, let a model *learn* what toxic language looks lik
    - First, run the pipeline with **default settings** (`TfidfVectorizer(ngram_range=(1, 1))` + a plain `LogisticRegression`) and evaluate it. That result is *your* baseline — the number to beat.
    - Then try to improve on it — experiment with features and hyperparameters (see tips below), changing **one thing at a time**, and **log each run's metrics** (see [Work like a researcher](#how-to-work-on-this-project)).
 
-**What to expect:** the untuned default already reaches roughly **0.9 accuracy** — but on imbalanced data (~19% toxic) accuracy flatters you, so the number that actually matters is **F1 on the toxic class**, which starts well below the accuracy. Don't chase a fixed target you copied from someone else; measure your own default, then beat it — and watch F1, not accuracy, as you tune.
+**What to expect:** the untuned default already reaches roughly **0.90 accuracy** — but on imbalanced data (~19% toxic) accuracy flatters you, so the number that actually matters is **F1 on the toxic class**, which starts much lower (around **0.67** out of the box). Don't chase a fixed target you copied from someone else; measure your own default, then beat it — and watch F1, not accuracy, as you tune.
 
 > **Why F1 now?** Because the data is imbalanced (~19% toxic), accuracy can look high while the model misses most toxic messages (you saw this in Level 1). **F1** — the harmonic mean of precision and recall on the toxic class — is the honest single number to optimize here.
 
