@@ -53,8 +53,9 @@ If you took this course in the previous run, here's what's different — and why
   finding your footing) so that more of your time and attention goes to the lessons that actually
   matter.
 - **How this revision was made.** I used Claude Opus to help edit these docs and expand the
-  reference code on the private branch — a way to balance making meaningful improvements against my
-  limited schedule. I reviewed and directed the changes; flagging the provenance for transparency.
+  reference code (in [`reference/`](reference/) — spoilers; try each level yourself first) — a way to
+  balance making meaningful improvements against my limited schedule. I reviewed and directed the
+  changes; flagging the provenance for transparency.
 
 ## Prerequisites
 

@@ -209,5 +209,10 @@ __marimo__/
 # The data files may be large, don't commit those to git
 data/**
 
+# Reference implementation's local data and trained models (keep the download script)
+reference/data/**
+!reference/data/download.sh
+reference/models/**
+
 # OpenRouter API key, etc shouldn't be committed to git
 .env
