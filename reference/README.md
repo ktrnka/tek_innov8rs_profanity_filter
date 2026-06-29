@@ -36,7 +36,6 @@ uv run main.py gemini  --help    # Level 3: Gemini-specific
 
 # examples
 uv run main.py sklearn train                 # train + evaluate on a held-out split
-uv run main.py sklearn train --char-ngrams   # character n-gram variant (Level 4)
 uv run main.py sklearn predict "you noob"
 ```
 

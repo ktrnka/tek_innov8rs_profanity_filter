@@ -11,6 +11,14 @@
 Evaluated on 100,000 Reddit usernames (unlabeled data). Username filtering is now optional Level 4
 work; these numbers are from the first run.
 
+> **⚠️ Provenance — read before trusting the numbers here.** This whole section is from the fall-2025
+> run on the *old* `gametox.csv`. The "GameTox F1" figures below (0.696 word unigrams, 0.740 char
+> n-grams) are on that old dataset — for the current GameTox numbers on the new Codabench split, see
+> the **[2026 baselines](#2026-baselines-new-gametox-train-split)** section below, which is the single
+> source of truth. Also: the character-n-gram code path (`sklearn train --char-ngrams`) has since been
+> **removed** from the reference to keep the sklearn model simple, so the Method 5 commands no longer
+> run — they're kept only as a record of what was tried.
+
 ### REGEX METHODS
 
 #### Method 1: Word Boundaries (`\b`)
@@ -184,6 +192,66 @@ stratified test split for sklearn):
   the honest "beat your own default" bar students start from. The previously-recorded **0.905 /
   0.711** row used `LogisticRegressionCV` (which tunes regularization) plus `min_df`/`max_df`, so it
   was already an *improved* pipeline, not the default — don't quote it as the starting baseline.
+
+# sklearn (Level 2): tuned vs. untuned, with copy-paste pipelines
+
+The two sklearn rows in the table above (`0.669` → `0.711` toxic-F1) come from the two pipelines
+below. Both are trained on the same 80/20 stratified split of the 42,959-row GameTox train set
+(seed 42); the headline metric is F1 on the toxic class.
+
+**Untuned baseline — toxic F1 0.669 (accuracy 0.898).** All defaults; this is the honest "beat your
+own default" starting point.
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+
+pipeline = Pipeline([
+    ("tfidf", TfidfVectorizer()),
+    ("classifier", LogisticRegression(random_state=42, n_jobs=-1)),
+])
+```
+
+**Tuned — toxic F1 0.711 (accuracy 0.905).** Trim the vocabulary with `min_df`/`max_df`, and let
+`LogisticRegressionCV` tune the regularization strength `C` by cross-validation.
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.pipeline import Pipeline
+
+pipeline = Pipeline([
+    ("tfidf", TfidfVectorizer(
+        ngram_range=(1, 1),   # unigrams only
+        min_df=3,             # drop terms appearing in < 3 documents
+        max_df=0.2,           # drop terms appearing in > 20% of documents
+        lowercase=True,
+        strip_accents=None,   # ONNX export requires None
+    )),
+    ("classifier", LogisticRegressionCV(
+        cv=5,                 # tune C via 5-fold cross-validation
+        random_state=42,
+        max_iter=1000,
+        n_jobs=-1,            # use all CPU cores
+    )),
+])
+```
+
+So tuning buys about **+0.04 toxic-F1** (0.669 → 0.711) — real movement, even though accuracy barely
+changes (0.898 → 0.905). That accuracy-vs-F1 gap is exactly why tuning can *look* like it did nothing
+if you watch accuracy: on ~19%-toxic data the easy clean majority dominates accuracy, so the gains
+land almost entirely in toxic recall (0.542 → 0.614, at a small cost to precision, 0.872 → 0.843).
+
+*(More detail to follow: which individual knob moved the needle, and by how much.)*
+
+**On character n-grams.** In the fall-2025 run, switching TF-IDF to character n-grams (1–4) helped —
+~0.740 toxic-F1 on the *old* dataset vs. ~0.696 for tuned unigrams, and it handled concatenated/
+obfuscated text (`fuckthatshit`, `fck`) far better, which also made it the best ML option for
+usernames (see the username section above). I have **not** re-run it on the new GameTox split, and
+I dropped the `--char-ngrams` code path from the reference to keep the sklearn model simple — word
+unigrams are the one maintained path now. If you need the extra recall on concatenated/obfuscated
+text, char n-grams are the first knob I'd reach back for.
 
 # 2026 LLM provider findings (Level 3)
 
