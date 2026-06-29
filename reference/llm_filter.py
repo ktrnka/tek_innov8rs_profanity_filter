@@ -1,5 +1,5 @@
 """
-LLM-based profanity filter implementation (Level 2).
+LLM-based profanity filter implementation (Level 3).
 """
 
 import os
@@ -91,7 +91,7 @@ class LLMProfanityFilter:
 
 @click.group()
 def llm():
-    """LLM-based filter using OpenRouter (Level 2)."""
+    """LLM-based filter using OpenRouter (Level 3)."""
     pass
 
 

@@ -31,7 +31,7 @@ Some setup has to happen before chat works:
 
 ## Hyperparameter tuning on TF-IDF + LogisticRegression — does it actually move the needle?
 
-Yes, it helps. See the note in [reference results](reference/docs/2026-06-reference-results.md).
+Yes, it helps. See the note in [reference results](../reference/docs/2026-06-reference-results.md).
 
 The basic sklearn model with defaults achieves 0.67 F1 on profane messages. Tuning the hyperparameters of the TfidfVectorizer and swapping out LogisticRegression for LogisticRegressionCV to tune the `C` value brings it up to 0.71.
 

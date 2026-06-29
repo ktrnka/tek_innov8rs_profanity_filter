@@ -1,5 +1,5 @@
 """
-Scikit-learn based profanity filter implementation (Level 3).
+Scikit-learn based profanity filter implementation (Level 2).
 """
 
 from pathlib import Path
@@ -131,7 +131,7 @@ class SklearnProfanityFilter:
 
 @click.group()
 def sklearn():
-    """Traditional ML classifier using scikit-learn (Level 3)."""
+    """Traditional ML classifier using scikit-learn (Level 2)."""
     pass
 
 
