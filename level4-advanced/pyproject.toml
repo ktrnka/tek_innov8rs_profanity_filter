@@ -1,0 +1,57 @@
+[project]
+name = "profanity-filter"
+version = "0.1.0"
+description = "Hybrid profanity filter for gaming chat with Traditional ML, ModernBERT, and Toxic-BERT"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Tek Innov8rs", email = "example@example.com"}
+]
+keywords = ["profanity", "toxicity", "nlp", "moderation", "gaming", "chat", "ml", "transformers"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "scikit-learn>=1.3.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "accelerate>=0.20.0",
+    "datasets>=2.14.0",
+    "jupyter>=1.0.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+]
+
+# Full installation with all features
+all = [
+    "accelerate>=0.20.0",
+    "datasets>=2.14.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+]
+
+[project.scripts]
+profanity-filter = "profanity_filter.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/profanity_filter"]
